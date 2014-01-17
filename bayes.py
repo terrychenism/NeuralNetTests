@@ -14,13 +14,13 @@ def loadDataSet():
                  ['stop', 'posting', 'stupid', 'worthless', 'garbage'],
                  ['mr', 'licks', 'ate', 'my', 'steak', 'how', 'to', 'stop', 'him'],
                  ['quit', 'buying', 'worthless', 'dog', 'food', 'stupid']]
-    classVec = [0,1,0,1,0,1]    #1 is abusive, 0 not
+    classVec = [0,1,0,1,0,1]    
     return postingList,classVec
                  
 def createVocabList(dataSet):
-    vocabSet = set([])  #create empty set
+    vocabSet = set([])  
     for document in dataSet:
-        vocabSet = vocabSet | set(document) #union of the two sets
+        vocabSet = vocabSet | set(document) 
     return list(vocabSet)
 
 def setOfWords2Vec(vocabList, inputSet):
@@ -44,6 +44,6 @@ def trainNB0(trainMatrix,trainCategory):
         else:
             p0Num += trainMatrix[i]
             p0Denom += sum(trainMatrix[i])
-    p1Vect = p1Num/p1Denom #change to log()
-    p0Vect = p0Num/p0Denom #change to log()
+    p1Vect = p1Num/p1Denom 
+    p0Vect = p0Num/p0Denom 
     return p0Vect,p1Vect,pAbusive
