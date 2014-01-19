@@ -122,27 +122,27 @@ def localWords(feed1,feed0):
         wordList = textParse(feed1['entries'][i]['summary'])
         docList.append(wordList)
         fullText.extend(wordList)
-        classList.append(1) #NY is class 1
+        classList.append(1) 
         wordList = textParse(feed0['entries'][i]['summary'])
         docList.append(wordList)
         fullText.extend(wordList)
         classList.append(0)
-    vocabList = createVocabList(docList)#create vocabulary
-    top30Words = calcMostFreq(vocabList,fullText)   #remove top 30 words
+    vocabList = createVocabList(docList)
+    top30Words = calcMostFreq(vocabList,fullText)  
     for pairW in top30Words:
         if pairW[0] in vocabList: vocabList.remove(pairW[0])
-    trainingSet = range(2*minLen); testSet=[]           #create test set
+    trainingSet = range(2*minLen); testSet=[]          
     for i in range(20):
         randIndex = int(random.uniform(0,len(trainingSet)))
         testSet.append(trainingSet[randIndex])
         del(trainingSet[randIndex])  
     trainMat=[]; trainClasses = []
-    for docIndex in trainingSet:#train the classifier (get probs) trainNB0
+    for docIndex in trainingSet:
         trainMat.append(bagOfWords2VecMN(vocabList, docList[docIndex]))
         trainClasses.append(classList[docIndex])
     p0V,p1V,pSpam = trainNB0(array(trainMat),array(trainClasses))
     errorCount = 0
-    for docIndex in testSet:        #classify the remaining items
+    for docIndex in testSet:        
         wordVector = bagOfWords2VecMN(vocabList, docList[docIndex])
         if classifyNB(array(wordVector),p0V,p1V,pSpam) != classList[docIndex]:
             errorCount += 1
