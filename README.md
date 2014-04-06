@@ -1,4 +1,4 @@
 Machine_Learning_In_Python
 =========
 
-Machine Learning in action
+exercise from Machine Learning in action 
