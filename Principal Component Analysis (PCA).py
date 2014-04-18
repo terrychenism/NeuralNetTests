@@ -14,13 +14,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d import proj3d
 from matplotlib.patches import FancyArrowPatch
 
-np.random.seed(1) # random seed for consistency
-
-# A reader pointed out that Python 2.7 would raise a
-# "ValueError: object of too small depth for desired array".
-# This can be avoided by choosing a smaller random seed, e.g. 1
-# or by completely omitting this line, since I just used the random seed for
-# consistency.
+np.random.seed(1) # random seed 
 
 mu_vec1 = np.array([0,0,0])
 cov_mat1 = np.array([[1,0,0],[0,1,0],[0,0,1]])
