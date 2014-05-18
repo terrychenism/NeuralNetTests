@@ -57,5 +57,5 @@ end
 startTime = cputime;
 model = svmtrain(double(y_train),double(X_train),'-t 0');
 duration = cputime - startTime;
-fprintf('Test Accuracy: %f\n', mean(double(p == y_test)) * 100);
+fprintf('Train Time: %.2f (s)\n', duration);  
 [predict_label, accuracy, dec_values] = svmpredict(double(y_test),double(X_test), model);
