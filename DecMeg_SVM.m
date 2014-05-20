@@ -11,7 +11,7 @@ y_train = [];
 X_test = [];
 y_test = [];
 ids_test = [];
-% Crating the trainset. (Please specify the absolute path for the train data)
+
 disp('Creating the trainset.');
 for i = 1 : length(subjects_train)
     path = 'G:/EDU/Coding/Kaggle/DecMeg2014/data/';  % Specify absolute path 
