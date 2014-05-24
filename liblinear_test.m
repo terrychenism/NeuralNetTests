@@ -2,8 +2,6 @@ clear; clc;
 addpath('C:\Users\tchen2\Desktop\stlSubset\liblinear-1.94\matlab')
 %%% step1: load data
 fprintf(1,'step1: Load data...\n');
-% pooledFeaturesTrain大小为400*2000*3*3
-% pooledFeaturesTest大小为400*3200*3*3
 
 load cnnPooledFeatures.mat;
 load stlTrainSubset.mat % loads numTrainImages, trainImages, trainLabels
