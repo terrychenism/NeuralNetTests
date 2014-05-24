@@ -1,6 +1,6 @@
 clear all;
 addpath('C:\Users\tchen2\Desktop\stlSubset\liblinear-1.94\matlab');
-subjects_train = 1:14;    
+subjects_train = 1:2;    
 disp(strcat('Training on subjects',num2str(subjects_train(1)),':',num2str(subjects_train(end))));
 
 tmin = 0;
@@ -33,11 +33,12 @@ for i = 1 : length(subjects_train)
 end
 
 
-%%%%----read test set--------------
+
+%=====read test set===========
 % disp('Creating the testset.');
-% subjects_test = 4:4;
+% subjects_test = 15:16;
 % for i = 1 : length(subjects_test)
-%     path = 'G:/EDU/Coding/Kaggle/DecMeg2014/data/';  % Specify absolute path 
+%     path = './data/'; % Specify absolute path
 %     filename = sprintf(strcat(path,'train_subject%02d.mat'),subjects_test(i));
 %     disp(strcat('Loading ',filename));
 %     data = load(filename);
@@ -51,31 +52,34 @@ end
 %     disp(strcat('sfreq:', num2str(sfreq)));
 %     features = createFeatures(XX,tmin, tmax, sfreq,tmin_original);
 %     X_test = [X_test;features];
+%     %ids_test = [ids_test;ids];
 %     y_test = [y_test;yy];
 % end
-
+%====================================
 %===================================
 disp('Creating the testset.');
-subjects_test = 15:16;
+subjects_test = 17:23;
 for i = 1 : length(subjects_test)
     path = './data/'; % Specify absolute path
-    filename = sprintf(strcat(path,'train_subject%02d.mat'),subjects_test(i));
+    filename = sprintf(strcat(path,'test_subject%02d.mat'),subjects_test(i));
     disp(strcat('Loading ',filename));
     data = load(filename);
     XX = data.X;
-    yy = data.y;
+    ids = data.Id;
     sfreq = data.sfreq;
     tmin_original = data.tmin;
     disp('Dataset summary:')
     disp(sprintf('XX: %d trials, %d channels, %d timepoints',size(XX,1),size(XX,2),size(XX,3)));
-    disp(sprintf('yy: %d trials',size(yy,1)));
+    disp(sprintf('Ids: %d trials',size(ids,1)));
     disp(strcat('sfreq:', num2str(sfreq)));
     features = createFeatures(XX,tmin, tmax, sfreq,tmin_original);
     X_test = [X_test;features];
-    %ids_test = [ids_test;ids];
-    y_test = [y_test;yy];
+    ids_test = [ids_test;ids];
 end
 %====================================
+testsize = size(X_test);
+testlabel = testsize(1);
+y_test = zeros(testlabel,1);
 %%% step3: Cross Validation for choosing parameter
 fprintf(1,'step3: Cross Validation for choosing parameter c...\n');
 % the larger c is, more time should be costed
@@ -94,6 +98,7 @@ end
 fprintf(1,'The best c is c = %d.\n', c(best_c));
 toc;
 
+%best_c = 2^-4;
 %%% step4: train the model
 fprintf(1,'step4: Training...\n');
 tic;
@@ -117,13 +122,13 @@ toc;
 % duration = cputime - startTime;
 % fprintf('test Time: %.2f (s)\n', duration);  
 % 
-% % Saving the results in the submission file:
-% filename_submission = 'submission.csv';
-% disp(strcat('Creating submission file: ',filename_submission));
-% f = fopen(filename_submission, 'w');
-% fprintf(f,'%s,%s\n','Id','Prediction');
-% for i = 1 : length(y_pred_thresholded)
-%     fprintf(f,'%d,%d\n',ids_test(i),y_pred_thresholded(i));
-% end
-% fclose(f);
-% disp('Done.');
+% Saving the results in the submission file:
+filename_submission = 'submission.csv';
+disp(strcat('Creating submission file: ',filename_submission));
+f = fopen(filename_submission, 'w');
+fprintf(f,'%s,%s\n','Id','Prediction');
+for i = 1 : length(predict_label)
+    fprintf(f,'%d,%d\n',ids_test(i),predict_label(i));
+end
+fclose(f);
+disp('Done.');
