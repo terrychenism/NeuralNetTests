@@ -87,7 +87,7 @@ c = [2^-6 2^-5 2^-4 2^-3 2^-2 2^-1 2^0 2^1 2^2 2^3];
 max_acc = 0;
 tic;
 for i = 1 : size(c, 2)
-	option = ['-B 1 -c ' num2str(c(i)) ' -v 5 -q'];
+	option = ['-B 1 -c ' num2str(c(i)) ' -v 5 -q -s 0'];
 	fprintf(1,'Stage: %d/%d: c = %d, ', i, size(c, 2), c(i));
 	accuracy = train(double(y_train), sparse(double(X_train)), option);	
 	if accuracy > max_acc
@@ -102,7 +102,8 @@ toc;
 %%% step4: train the model
 fprintf(1,'step4: Training...\n');
 tic;
-option = ['-c ' num2str(c(best_c)) ' -B 1 -e 0.001'];
+%option = ['-c ' num2str(c(best_c)) ' -B 1 -e 0.001'];
+option = ['-c ' num2str(c(best_c)) ' -B 1 -e 0.2 -s 0'];
 model = train(double(y_train), sparse(double(X_train)), option);
 toc;
 
