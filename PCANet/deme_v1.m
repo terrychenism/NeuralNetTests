@@ -48,11 +48,17 @@ clear mnist_train;
 % TestData = mnistData(TrnSize+1:end,1:end)';
 % TestLabels = mnistLabels(TrnSize+1:end, end);
 
-TestData = mnistTestData(1:end,1:end)';
+%% test using subset of trainset 
 
-testsize = size(TestData);
-testlabel = testsize(2);
-TestLabels = zeros(testlabel,1);
+TestData = trainData(TrnSize+1:end,1:end)';
+TestLabels = trainLabels(TrnSize+1:end, end);
+
+%% for test dataset
+% TestData = mnistTestData(1:end,1:end)';
+% 
+% testsize = size(TestData);
+% testlabel = testsize(2);
+% TestLabels = zeros(testlabel,1);
 
 clear trainData;
 
