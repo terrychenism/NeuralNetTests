@@ -51,8 +51,10 @@ from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import AdaBoostRegressor
 clf_2 = AdaBoostRegressor(DecisionTreeRegressor(max_depth=4),
                           n_estimators=1000, random_state=rng)
-clf_1 = DecisionTreeRegressor(max_depth=6,random_state=rng)
+clf_1 = DecisionTreeRegressor(max_depth=12,random_state=rng)
 clf_1.fit(X_train, y_train)
+print("real value: %.4f" % y[1600])
+print("estimate value: %.4f" % clf_1.predict(X_train[1600,:]))
 y_pred = clf_1.predict(X_test)
 
 
