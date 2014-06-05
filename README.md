@@ -1,4 +1,17 @@
-Machine_Learning_In_Python
-=========
+Machine_Learning_Practical_exercise
+=======================================
 
-exercise from Machine Learning in action 
+
+
+This package contain matlab and python codes for machine learning algorithms
+
+Kaggle competitions
+
+
+
+
+
+
+
+
+Enjoy
