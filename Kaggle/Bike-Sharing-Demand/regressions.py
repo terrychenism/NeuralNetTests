@@ -11,6 +11,8 @@ import pandas as pd
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import ExtraTreesRegressor
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.neighbors import KNeighborsRegressor
 
 def loadData(datafile):
     return pd.read_csv(datafile)
@@ -30,13 +32,21 @@ def createDecisionTree():
     return est
 
 def createRandomForest():
-    est = RandomForestRegressor(n_estimators=200)
+    est = RandomForestRegressor(n_estimators=500)
     return est
 
 def createExtraTree():
-    est = ExtraTreesRegressor()
+    est = ExtraTreesRegressor(n_estimators=630)
+    return est
+    
+def createGradientBoosting():
+    est = GradientBoostingRegressor(n_estimators=100, learning_rate=1.0,max_depth=1, random_state=0, loss='ls')
     return est
 
+def createKNN():
+    est = KNeighborsRegressor(n_neighbors=2)
+    return est
+    
 def predict(est, train, test, features, target):
 
     est.fit(train[features], train[target])
@@ -59,7 +69,12 @@ def main():
     target = 'count'
     features = [col for col in train.columns if col not in ['datetime', 'casual', 'registered', 'count']]
 
-    est = createRandomForest()
+    #est = createDecisionTree()
+    #est = createRandomForest()
+    est = createExtraTree()
+    #est = createGradientBoostingRegressor()
+    #est = createKNN()
+    #train, test = normalize(train[features], test[features])
     predict(est, train, test, features, target)
 
 
