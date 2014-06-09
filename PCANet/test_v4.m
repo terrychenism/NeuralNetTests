@@ -25,7 +25,7 @@ load('testDataK.mat');
 % Load MNIST database files
 mnistData   = loadMNISTImages('mnist/train-images-idx3-ubyte');
 mnistLabels = loadMNISTLabels('mnist/train-labels-idx1-ubyte');
-
+ 
 % ===== Reshuffle the training data =====
 % Randnidx = randperm(size(mnist_train,1)); 
 % mnist_train = mnist_train(Randnidx,:); 
