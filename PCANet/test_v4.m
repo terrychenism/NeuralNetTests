@@ -3,7 +3,7 @@ addpath('./Utils');
 % addpath('./Liblinear');
 
 addpath('./liblinear-1.94/matlab');
-TrnSize = 600; 
+TrnSize = 10000; 
 ImgSize = 28; 
 ImgFormat = 'gray'; %'color' or 'gray'
 
