@@ -36,7 +36,7 @@ def createRandomForest():
     return est
 
 def createExtraTree():
-    est = ExtraTreesRegressor(n_estimators=630)
+    est = ExtraTreesRegressor(n_estimators=628)
     return est
     
 def createGradientBoosting():
