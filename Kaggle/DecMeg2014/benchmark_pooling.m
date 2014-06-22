@@ -34,7 +34,7 @@ for i = 1 : length(subjects_train)
     disp(sprintf('yy: %d trials',size(yy,1)));
     disp(strcat('sfreq:', num2str(sfreq)));
     features = createFeatures(XX,tmin, tmax, sfreq,tmin_original);
-    features = dyaddown(double(features),1,'r');
+    features = dyaddown(double(features),1,'c');
     X_train = [X_train;features];
     y_train = [y_train;yy];
 end
@@ -56,7 +56,7 @@ for i = 1 : length(subjects_test)
     disp(sprintf('Ids: %d trials',size(ids,1)));
     disp(strcat('sfreq:', num2str(sfreq)));
     features = createFeatures(XX,tmin, tmax, sfreq,tmin_original);
-    features = dyaddown(double(features),1,'r');
+    features = dyaddown(double(features),1,'c');
     X_test = [X_test;features];
     ids_test = [ids_test;ids];
 end
