@@ -12,10 +12,7 @@
 
 %% ===========
 function [features] = createFeatures(XX,tmin, tmax, sfreq,tmin_original)
-%Creation of the feature space:
-%- restricting the time window of MEG data to [tmin, tmax]sec.
-%- Concatenating the 306 timeseries of each trial in one long vector.
-%- Normalizing each feature independently (z-scoring).
+
 disp('Applying the desired time window.')
 beginning = (tmin - tmin_original) * sfreq+1;
 e = (tmax - tmin_original) * sfreq;
@@ -35,7 +32,6 @@ for i = 1 : size(XX,1)
     [thr, nkeep] = wdcbm (c,l,alpha,m);
     [xd,xcd,lxd,perf0,perl2] = wdencmp('lvd',c,l,wname,lev,thr,'h');
     features(i,:) = xd(:);
-    
     
 end
 disp('Features Normalization.');
