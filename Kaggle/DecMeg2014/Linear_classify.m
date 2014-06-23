@@ -1,5 +1,5 @@
 clear all;
-subjects_train = 1:1;    
+subjects_train = 1:16;    
 disp(strcat('Training on subjects',num2str(subjects_train(1)),':',num2str(subjects_train(end))));
 
 tmin = 0;
