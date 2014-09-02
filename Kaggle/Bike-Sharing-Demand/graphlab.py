@@ -70,5 +70,79 @@ def fused_predict(m1, m2, test_sframe):
     p2 = m2.predict(test_sframe).apply(lambda x: math.exp(x)-1)
     return (p1 + p2).apply(lambda x: x if x > 0 else 0)
 
-prediction = fused_predict(m1, m2, test_sframe)
-make_submission(prediction, 'submission.csv')
+# prediction = fused_predict(m1, m2, test_sframe)
+# make_submission(prediction, 'submission.csv')
+
+env = gl.deploy.environment.Local('hyperparam_search')
+training = training_sframe[training_sframe['day'] <= 16]
+validation = training_sframe[training_sframe['day'] > 16]
+training.save('/tmp/training')
+validation.save('/tmp/validation')
+
+
+ntrees = 500
+search_space = {
+    'params': {
+        'max_depth': [10, 15, 20],
+        'min_child_weight': [5, 10, 20],
+        'step_size': 0.05
+    },
+    'num_iterations': ntrees
+}
+
+def parameter_search(training_url, validation_url, default_params):
+    """
+    Return the optimal parameters in the given search space.
+    The parameter returned has the lowest validation rmse.
+    """
+    job = gl.toolkits.model_parameter_search(env, gl.boosted_trees.create,
+                                             train_set_path=training_url,
+                                             save_path='/tmp/job_output',
+                                             standard_model_params=default_params,
+                                             hyper_params=search_space,
+                                             test_set_path=validation_url)
+
+
+    # When the job is done, the result is stored in an SFrame
+    # The result contains attributes of the models in the search space
+    # and the validation error in RMSE. 
+    result = gl.SFrame('/tmp/job_output').sort('rmse', ascending=True)
+
+    # Return the parameters with the lowest validation error. 
+    optimal_params = result[['max_depth', 'min_child_weight']][0]
+    optimal_rmse = result['rmse'][0]
+    print 'Optimal parameters: %s' % str(optimal_params)
+    print 'RMSE: %s' % str(optimal_rmse)
+    return optimal_params
+
+
+
+fixed_params = {'features': new_features,
+                'verbose': False}
+
+fixed_params['target'] = 'log-casual'
+params_log_casual = parameter_search('/tmp/training',
+                                     '/tmp/validation',
+                                     fixed_params)
+
+fixed_params['target'] = 'log-registered'
+params_log_registered = parameter_search('/tmp/training',
+                                         '/tmp/validation',
+                                         fixed_params)
+m_log_registered = gl.boosted_trees.create(training_sframe,
+                                           features=new_features,
+                                           target='log-registered',
+                                           num_iterations=ntrees,
+                                           params=params_log_registered,
+                                           verbose=False)
+
+m_log_casual = gl.boosted_trees.create(training_sframe,
+                                       features=new_features,
+                                       target='log-casual',
+                                       num_iterations=ntrees,
+                                       params=params_log_casual,
+                                       verbose=False)
+
+final_prediction = fused_predict(m_log_registered, m_log_casual, test_sframe)
+
+make_submission(final_prediction, 'submission2.csv')
