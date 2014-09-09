@@ -6,7 +6,7 @@ import sys
 import numpy as np
 # add path of xgboost python module
 code_path = os.path.join(
-    os.path.split(inspect.getfile(inspect.currentframe()))[0], "../../python")
+    os.path.split(inspect.getfile(inspect.currentframe()))[0], "../../wrapper")
 
 sys.path.append(code_path)
 
@@ -42,19 +42,18 @@ param = {}
 param['objective'] = 'binary:logitraw'
 # scale weight of positive examples
 param['scale_pos_weight'] = sum_wneg/sum_wpos
-param['bst:eta'] = 0.1
-param['bst:max_depth'] = 6
+param['eta'] = 0.03 
+param['max_depth'] = 9
 param['eval_metric'] = 'auc'
 param['silent'] = 1
 param['nthread'] = 16
-param['alpha'] = 0.8
 
 # you can directly throw param in, though we want to watch multiple metrics here 
 plst = list(param.items())+[('eval_metric', 'ams@0.15')]
 
 watchlist = [ (xgmat,'train') ]
 # boost 120 tres
-num_round = 315
+num_round = 1200
 print ('loading data end, start to boost trees')
 bst = xgb.train( plst, xgmat, num_round, watchlist );
 # save out model
