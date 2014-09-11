@@ -42,7 +42,7 @@ param = {}
 param['objective'] = 'binary:logitraw'
 # scale weight of positive examples
 param['scale_pos_weight'] = sum_wneg/sum_wpos
-param['eta'] = 0.03 
+param['eta'] = 0.01 
 param['max_depth'] = 9
 param['eval_metric'] = 'auc'
 param['silent'] = 1
@@ -53,7 +53,7 @@ plst = list(param.items())+[('eval_metric', 'ams@0.15')]
 
 watchlist = [ (xgmat,'train') ]
 # boost 120 tres
-num_round = 1200
+num_round = 4500
 print ('loading data end, start to boost trees')
 bst = xgb.train( plst, xgmat, num_round, watchlist );
 # save out model
