@@ -150,8 +150,8 @@ int main()
 
 	//cvNamedWindow("Test");
 	caffe::Datum datum;
-
-	IplImage *img = cvLoadImage("C:/Users/cht2pal/Desktop/caffe-old-unpool/examples/DeconvNet/inference/000079.jpg");
+	const char* img_name = "C:/Users/cht2pal/Desktop/caffe-old-unpool/examples/DeconvNet/inference/000079.jpg";
+	IplImage *img = cvLoadImage(img_name);
 	cvShowImage("raw_image", img);
 
 	cvResize(img, small_image);
@@ -186,8 +186,8 @@ int main()
 	cout << thred << endl;
 	idx = 0;
 	for(int c = 0; c < out_blob->channels(); c++){
-		for(int i = 0; i < IMAGE_SIZE; i++){
-			for(int j=0; j < IMAGE_SIZE; j++){
+		for(int i = 0; i < out_blob->height(); i++){
+			for(int j=0; j < out_blob->width(); j++){
 				//apply pixel
 				seg_map.at<float>(i,j) =  result[0]->cpu_data()[idx++];
 				//cout << result[0]->cpu_data()[idx++] << " ";
@@ -203,7 +203,22 @@ int main()
 		cv::Mat image_32f;
 		seg_map.convertTo(image_32f,CV_32FC1,1/sdv.val[0],-avg.val[0]/sdv.val[0]);
 		seg_map = image_32f * 255;
-		imshow("map", seg_map);
+		Mat	res_map;
+		resize(seg_map, res_map, Size(img->width, img->height));
+
+		Mat result(img->height,img->width, CV_32FC3, Scalar(0,0,0));
+		img = cvLoadImage(img_name);
+		for (int c = 0; c < 3; c++){
+			for(int h = 0; h < res_map.rows; h++){
+				for(int w = 0; w < res_map.cols; w++){
+					//cout << res_map.at<float>(h,w) << endl;
+					if(res_map.at<float>(h,w) <  1)
+						img->imageData[h*img->widthStep+w*img->nChannels+c]  = 0;
+				}
+			}
+		}
+		cvShowImage("Test", img);
+		//imshow("map", res_map);
 		waitKey();
 	}
 
