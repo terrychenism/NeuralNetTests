@@ -178,25 +178,27 @@ int main()
 			  << out_blob->width() << " " << out_blob->num();
 
 	Mat seg_map(IMAGE_SIZE,IMAGE_SIZE, CV_32FC1, Scalar(0,0,0));
+	vector<Mat> maps;
 	int sum_pix = 0;
 	int idx = 0;
-	for( int i = 0; i < IMAGE_SIZE*IMAGE_SIZE; i++)
+	/*for( int i = 0; i < IMAGE_SIZE*IMAGE_SIZE; i++)
 		sum_pix += result[0]->cpu_data()[idx++];
 	int thred = (sum_pix / idx);
-	cout << thred << endl;
+	cout << thred << endl;*/
 	idx = 0;
-	for(int c = 0; c < out_blob->channels(); c++){
+	int cnt_max = INT_MIN;
+	for(int c = 0; c < out_blob->channels(); c++){ // for 21 channels
+		sum_pix = 0;
 		for(int i = 0; i < out_blob->height(); i++){
 			for(int j=0; j < out_blob->width(); j++){
+				sum_pix += result[0]->cpu_data()[idx];
 				//apply pixel
-				seg_map.at<float>(i,j) =  result[0]->cpu_data()[idx++];
-				//cout << result[0]->cpu_data()[idx++] << " ";
-				/*if(result[0]->cpu_data()[idx++] >= thred)
-				seg_map.at<float>(i,j) = 255;
-				else
-				seg_map.at<float>(i,j) = 0;*/
+				seg_map.at<float>(i,j) =  result[0]->cpu_data()[idx++];		
 			}
 		}
+		int thred = (sum_pix / IMAGE_SIZE*IMAGE_SIZE);
+		cout << thred << endl;
+
 		cv::Scalar avg,sdv;
 		cv::meanStdDev(seg_map, avg, sdv);
 		sdv.val[0] = sqrt(seg_map.cols*seg_map.rows*sdv.val[0]*sdv.val[0]);
@@ -205,8 +207,8 @@ int main()
 		seg_map = image_32f * 255;
 		Mat	res_map;
 		resize(seg_map, res_map, Size(img->width, img->height));
-
-		Mat result(img->height,img->width, CV_32FC3, Scalar(0,0,0));
+		sum_pix = 0;
+		//Mat result(img->height,img->width, CV_32FC3, Scalar(0,0,0));
 		img = cvLoadImage(img_name);
 		for (int c = 0; c < 3; c++){
 			for(int h = 0; h < res_map.rows; h++){
@@ -217,6 +219,7 @@ int main()
 				}
 			}
 		}
+		
 		cvShowImage("Test", img);
 		//imshow("map", res_map);
 		waitKey();
