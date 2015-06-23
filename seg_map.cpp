@@ -22,6 +22,7 @@ using namespace caffe;  // NOLINT(build/namespaces)
 using namespace std;
 using namespace cv;
 
+
 void bubble_sort(float *feature, int *sorted_idx)
 {
 	int i=0, j=0;
@@ -105,6 +106,7 @@ void draw_output(IplImage *img, float *output, int *idx, char label[][512])
 	}
 }
 
+
 int main(int argc, char** argv)
 {
 	// Test mode
@@ -133,7 +135,7 @@ int main(int argc, char** argv)
   
 	int i=0, j=0, k=0;
 	int top5_idx[5];
-	float mean_val[3] = {103.939, 116.779, 123.68}; // bgr mean
+	float mean_val[3] = {104.006, 116.668, 122.678}; // bgr mean
 
 	// input
 	float output[1000];
@@ -188,36 +190,44 @@ int main(int argc, char** argv)
 	idx = 0;
 	int cnt_max = INT_MIN;
 	vector<pair<double, cv::Mat>> mp;
-	for(int c = 0; c < out_blob->channels(); c++){ // for 21 channels
+	
 		sum_pix = 0;
 		Mat seg_map(IMAGE_SIZE,IMAGE_SIZE, CV_32FC1, Scalar(0,0,0));
 		for(int i = 0; i < out_blob->height(); i++){
 			for(int j=0; j < out_blob->width(); j++){
-				sum_pix += result[0]->cpu_data()[idx];
+				vector<pair<float, int>> v;
+				for(int c = 0; c < out_blob->channels(); c++){ // for 21 channels
+					v.push_back( make_pair(result[0]->cpu_data()[idx + IMAGE_SIZE*IMAGE_SIZE*c], c) );
+				}
+				std::sort(v.begin(), v.end(), [](const std::pair<float, int> &left, const std::pair<float, int> &right) {
+						return left.first >  right.first;} );	
 				//apply pixel
-				seg_map.at<float>(i,j) =  result[0]->cpu_data()[idx++];		
+				seg_map.at<float>(i,j) =  v[0].second;
+							
+				idx++;
 			}
 		}
-		mp.push_back(make_pair(sum_pix,seg_map));
-	}
+	//imshow("seg", seg_map);
 
-	std::sort(mp.begin(), mp.end(), [](const std::pair<double,cv::Mat> &left, const std::pair<double,cv::Mat> &right) {
-		return left.first >  right.first;} );
+	//std::sort(mp.begin(), mp.end(), [](const std::pair<double,cv::Mat> &left, const std::pair<double,cv::Mat> &right) {
+		//return left.first >  right.first;} );
 	
-	for(int i = 1; i < mp.size(); i++){
-		Mat seg_map;
+	//for(int i = 1; i < mp.size(); i++){
+		/*Mat seg_map;
 		seg_map = mp[i].second;
 		cout << mp[i].first << endl;
 		imshow("seg", seg_map);
 		int thred =  (mp[i].first / (IMAGE_SIZE*IMAGE_SIZE));
 		cout << thred << endl;
-		if(thred < 1) break;
-		cv::Scalar avg,sdv;
-		cv::meanStdDev(seg_map, avg, sdv);
-		sdv.val[0] = sqrt(seg_map.cols*seg_map.rows*sdv.val[0]*sdv.val[0]);
-		cv::Mat image_32f;
-		seg_map.convertTo(image_32f,CV_32FC1,1/sdv.val[0],-avg.val[0]/sdv.val[0]);
-		seg_map = image_32f * 255;
+		if(thred < 1) break;*/
+		
+		// normalize 
+	/*cv::Scalar avg,sdv;
+	cv::meanStdDev(seg_map, avg, sdv);
+	sdv.val[0] = sqrt(seg_map.cols*seg_map.rows*sdv.val[0]*sdv.val[0]);
+	cv::Mat image_32f;
+	seg_map.convertTo(image_32f,CV_32FC1,1/sdv.val[0],-avg.val[0]/sdv.val[0]);
+	seg_map = image_32f * 255;*/
 		Mat	res_map;
 		resize(seg_map, res_map, Size(img->width, img->height));
 		sum_pix = 0;
@@ -227,16 +237,18 @@ int main(int argc, char** argv)
 			for(int h = 0; h < res_map.rows; h++){
 				for(int w = 0; w < res_map.cols; w++){
 					//cout << res_map.at<float>(h,w) << endl;
-					if(res_map.at<float>(h,w) <  1)
+					if(res_map.at<float>(h,w) == 0)
 						img->imageData[h*img->widthStep+w*img->nChannels+c]  = 0;
+					//else
+						//img->imageData[h*img->widthStep+w*img->nChannels+c]  = 255;
 				}
 			}
 		}
 		
 		cvShowImage("Test", img);
 		//imshow("map", res_map);
-		waitKey();
-	}
+		//waitKey();
+	//}
 
 	
 
