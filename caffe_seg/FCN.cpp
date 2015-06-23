@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////
-////// DecoupledNet.cpp
+////// FCN.cpp
 ////// 2015-06-23
 ////// Tairui Chen
 ///////////////////////////////////////////////////////////
@@ -218,19 +218,6 @@ int main(int argc, char** argv)
 			
 	cvShowImage("Test", final_seg);
 
-	//float output[20];
-	//double max_prob = INT_MIN;
-	//int pred_label;
-	//for(int i=0; i<20; i++)
-	//{
-	//	output[i] = result[0]->cpu_data()[i];
-	//	cout << output[i] << " " << max_prob;
-	//	if(output[i]  > max_prob){
-	//		max_prob = output[i];	
-	//		pred_label = i;
-	//	}
-	//}
-	//cout << endl << pred_label + 1 << endl;
 	clock_t end = clock();
 	LOG(INFO) <<  "Process time: " << double(end - begin) / CLOCKS_PER_SEC;
 
