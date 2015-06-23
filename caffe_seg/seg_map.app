@@ -145,6 +145,8 @@ int main(int argc, char** argv)
 	//Debug
 	//caffe_test_net.set_debug_info(true);
 
+	clock_t begin = clock();
+
 	// read labels
 	char label[1000][512];
 	// get_label("G:/EDU/_SOURCE_CODE/caffe/caffe-June/examples/live_net/synset_words.txt", label);
@@ -159,7 +161,7 @@ int main(int argc, char** argv)
 	Blob<float> blob(1, 3, IMAGE_SIZE, IMAGE_SIZE);
 
 	int crop_size = 256;
-
+	
 	// open video
 	IplImage *frame = 0, *crop_image = 0, *small_image = 0;
 	CvCapture* capture = cvCaptureFromFile("F:/BaiduYunDownload/car.avi");// cvCaptureFromCAM(0);
@@ -273,7 +275,8 @@ int main(int argc, char** argv)
 		//waitKey();
 	//}
 
-	
+	clock_t end = clock();
+	LOG(INFO) <<  "Process time: " << double(end - begin) / CLOCKS_PER_SEC;
 
 	/* while(1)
 	{
