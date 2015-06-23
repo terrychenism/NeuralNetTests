@@ -63,6 +63,21 @@ void get_top5(float *feature, int arr[5])
 	}
 }
 
+vector<vector<float>>  get_pixel(char fileneme[256]){
+	std::fstream myfile(fileneme, std::ios_base::in);
+	float a;
+	vector<vector<float>> pTable;
+	while(myfile >> a){
+		vector<float> v;
+		v.push_back(a);
+		for(int i = 0; i < 2 && myfile >> a; i++)
+			v.push_back(a);
+		pTable.push_back(v);
+		
+	}
+	return pTable;
+}
+
 void get_label(char filename[256], char label[][512])
 {
 	FILE *fp = fopen(filename, "r");
@@ -109,6 +124,7 @@ void draw_output(IplImage *img, float *output, int *idx, char label[][512])
 
 int main(int argc, char** argv)
 {
+	vector<vector<float>> pTable = get_pixel( "G:/EDU/_SOURCE_CODE/caffe/caffe-decouple/examples/seg_map/pixel.txt");
 	// Test mode
 	Caffe::set_phase(Caffe::TEST);
 
@@ -191,22 +207,22 @@ int main(int argc, char** argv)
 	int cnt_max = INT_MIN;
 	vector<pair<double, cv::Mat>> mp;
 	
-		sum_pix = 0;
-		Mat seg_map(IMAGE_SIZE,IMAGE_SIZE, CV_32FC1, Scalar(0,0,0));
-		for(int i = 0; i < out_blob->height(); i++){
-			for(int j=0; j < out_blob->width(); j++){
-				vector<pair<float, int>> v;
-				for(int c = 0; c < out_blob->channels(); c++){ // for 21 channels
-					v.push_back( make_pair(result[0]->cpu_data()[idx + IMAGE_SIZE*IMAGE_SIZE*c], c) );
-				}
-				std::sort(v.begin(), v.end(), [](const std::pair<float, int> &left, const std::pair<float, int> &right) {
-						return left.first >  right.first;} );	
-				//apply pixel
-				seg_map.at<float>(i,j) =  v[0].second;
-							
-				idx++;
+	sum_pix = 0;
+	Mat seg_map(IMAGE_SIZE,IMAGE_SIZE, CV_32FC1, Scalar(0,0,0));
+	for(int i = 0; i < out_blob->height(); i++){
+		for(int j=0; j < out_blob->width(); j++){
+			vector<pair<float, int>> v;
+			for(int c = 0; c < out_blob->channels(); c++){ // for 21 channels
+				v.push_back( make_pair(result[0]->cpu_data()[idx + IMAGE_SIZE*IMAGE_SIZE*c], c) );
 			}
+			std::sort(v.begin(), v.end(), [](const std::pair<float, int> &left, const std::pair<float, int> &right) {
+					return left.first >  right.first;} );	
+			//apply pixel
+			seg_map.at<float>(i,j) =  v[0].second;
+							
+			idx++;
 		}
+	}
 	//imshow("seg", seg_map);
 
 	//std::sort(mp.begin(), mp.end(), [](const std::pair<double,cv::Mat> &left, const std::pair<double,cv::Mat> &right) {
@@ -228,24 +244,31 @@ int main(int argc, char** argv)
 	cv::Mat image_32f;
 	seg_map.convertTo(image_32f,CV_32FC1,1/sdv.val[0],-avg.val[0]/sdv.val[0]);
 	seg_map = image_32f * 255;*/
-		Mat	res_map;
-		resize(seg_map, res_map, Size(img->width, img->height));
-		sum_pix = 0;
-		//Mat result(img->height,img->width, CV_32FC3, Scalar(0,0,0));
-		img = cvLoadImage(img_name);
-		for (int c = 0; c < 3; c++){
-			for(int h = 0; h < res_map.rows; h++){
-				for(int w = 0; w < res_map.cols; w++){
-					//cout << res_map.at<float>(h,w) << endl;
-					if(res_map.at<float>(h,w) == 0)
-						img->imageData[h*img->widthStep+w*img->nChannels+c]  = 0;
-					//else
-						//img->imageData[h*img->widthStep+w*img->nChannels+c]  = 255;
-				}
+
+	Mat	res_map;
+	resize(seg_map, res_map, Size(img->width, img->height));
+	sum_pix = 0;
+	//Mat result(img->height,img->width, CV_32FC3, Scalar(0,0,0));
+	//img = cvLoadImage(img_name);
+	IplImage *final_seg = cvCreateImage(cvSize(img->width, img->height), 8, 3);
+	for(int h = 0; h < res_map.rows; h++){
+		for(int w = 0; w < res_map.cols; w++){
+			int p = res_map.at<float>(h,w);
+			//cout << p << " ";
+			for (int c = 0; c < 3; c++){
+				final_seg->imageData[h*img->widthStep+w*img->nChannels+c] = pTable[p][c]*255;
+				//cout << pTable[p][c] <<  " ";
 			}
+			//cout << res_map.at<float>(h,w) << endl;
+			/*if(res_map.at<float>(h,w) == 0)
+			for (int c = 0; c < 3; c++){
+			img->imageData[h*img->widthStep+w*img->nChannels+c]  = 0;
+			}*/
 		}
+	}
 		
-		cvShowImage("Test", img);
+		
+	cvShowImage("Test", final_seg);
 		//imshow("map", res_map);
 		//waitKey();
 	//}
