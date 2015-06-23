@@ -105,7 +105,7 @@ void draw_output(IplImage *img, float *output, int *idx, char label[][512])
 	}
 }
 
-int main()
+int main(int argc, char** argv)
 {
 	// Test mode
 	Caffe::set_phase(Caffe::TEST);
@@ -119,17 +119,17 @@ int main()
 
 	// prototxt
 	//Net<float> caffe_test_net("C:/Users/cht2pal/Desktop/caffe-old-unpool/examples/live_net/VGG_ILSVRC_19_layers_deploy.prototxt");
-	Net<float> caffe_test_net("C:/Users/cht2pal/Desktop/caffe-old-unpool/examples/DeconvNet/model/DeconvNet/DeconvNet_inference_deploy.prototxt");
+	Net<float> caffe_test_net("G:/EDU/_SOURCE_CODE/caffe/caffe-decouple/examples/DeconvNet/model/DeconvNet/DeconvNet_inference_deploy.prototxt");
 	// caffemodel
 	//caffe_test_net.CopyTrainedLayersFrom("C:/Users/cht2pal/Desktop/caffe-old-unpool/examples/live_net/VGG_ILSVRC_19_layers.caffemodel");
-	caffe_test_net.CopyTrainedLayersFrom("C:/Users/cht2pal/Desktop/caffe-old-unpool/examples/DeconvNet/model/DeconvNet/DeconvNet_trainval_inference.caffemodel");
+	caffe_test_net.CopyTrainedLayersFrom("G:/EDU/_SOURCE_CODE/caffe/caffe-decouple/examples/DeconvNet/model/DeconvNet/DeconvNet_trainval_inference.caffemodel");
 
 	//Debug
 	//caffe_test_net.set_debug_info(true);
 
 	// read labels
 	char label[1000][512];
-	get_label("C:/Users/cht2pal/Desktop/caffe-old-unpool/examples/live_net/synset_words.txt", label);
+	// get_label("G:/EDU/_SOURCE_CODE/caffe/caffe-June/examples/live_net/synset_words.txt", label);
   
 	int i=0, j=0, k=0;
 	int top5_idx[5];
@@ -144,13 +144,13 @@ int main()
 
 	// open video
 	IplImage *frame = 0, *crop_image = 0, *small_image = 0;
-	CvCapture* capture = cvCaptureFromFile("C:/Users/cht2pal/Desktop/caffe-old-unpool/examples/live_net/basketball.avi");// cvCaptureFromCAM(0);
+	CvCapture* capture = cvCaptureFromFile("F:/BaiduYunDownload/car.avi");// cvCaptureFromCAM(0);
 	crop_image = cvCreateImage(cvSize(crop_size,crop_size), 8, 3);
 	small_image = cvCreateImage(cvSize(IMAGE_SIZE, IMAGE_SIZE), 8, 3);
 
 	//cvNamedWindow("Test");
 	caffe::Datum datum;
-	const char* img_name = "C:/Users/cht2pal/Desktop/caffe-old-unpool/examples/DeconvNet/inference/000079.jpg";
+	const char* img_name = argv[1]; //"G:/EDU/_SOURCE_CODE/caffe/caffe-decouple/examples/seg_map/000012.jpg"; //
 	IplImage *img = cvLoadImage(img_name);
 	cvShowImage("raw_image", img);
 
@@ -177,9 +177,9 @@ int main()
 	LOG(INFO) << out_blob->channels() << " " << out_blob->height() << " " 
 			  << out_blob->width() << " " << out_blob->num();
 
-	Mat seg_map(IMAGE_SIZE,IMAGE_SIZE, CV_32FC1, Scalar(0,0,0));
+	//Mat seg_map(IMAGE_SIZE,IMAGE_SIZE, CV_32FC1, Scalar(0,0,0));
 	vector<Mat> maps;
-	int sum_pix = 0;
+	double sum_pix = 0;
 	int idx = 0;
 	/*for( int i = 0; i < IMAGE_SIZE*IMAGE_SIZE; i++)
 		sum_pix += result[0]->cpu_data()[idx++];
@@ -187,8 +187,10 @@ int main()
 	cout << thred << endl;*/
 	idx = 0;
 	int cnt_max = INT_MIN;
+	vector<pair<double, cv::Mat>> mp;
 	for(int c = 0; c < out_blob->channels(); c++){ // for 21 channels
 		sum_pix = 0;
+		Mat seg_map(IMAGE_SIZE,IMAGE_SIZE, CV_32FC1, Scalar(0,0,0));
 		for(int i = 0; i < out_blob->height(); i++){
 			for(int j=0; j < out_blob->width(); j++){
 				sum_pix += result[0]->cpu_data()[idx];
@@ -196,9 +198,20 @@ int main()
 				seg_map.at<float>(i,j) =  result[0]->cpu_data()[idx++];		
 			}
 		}
-		int thred = (sum_pix / IMAGE_SIZE*IMAGE_SIZE);
-		cout << thred << endl;
+		mp.push_back(make_pair(sum_pix,seg_map));
+	}
 
+	std::sort(mp.begin(), mp.end(), [](const std::pair<double,cv::Mat> &left, const std::pair<double,cv::Mat> &right) {
+		return left.first >  right.first;} );
+	
+	for(int i = 1; i < mp.size(); i++){
+		Mat seg_map;
+		seg_map = mp[i].second;
+		cout << mp[i].first << endl;
+		imshow("seg", seg_map);
+		int thred =  (mp[i].first / (IMAGE_SIZE*IMAGE_SIZE));
+		cout << thred << endl;
+		if(thred < 1) break;
 		cv::Scalar avg,sdv;
 		cv::meanStdDev(seg_map, avg, sdv);
 		sdv.val[0] = sqrt(seg_map.cols*seg_map.rows*sdv.val[0]*sdv.val[0]);
