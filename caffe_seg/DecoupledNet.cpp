@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////
 ////// DecoupledNet.cpp
-////// 2015-06-23
+////// 2015-06-27
 ////// Tairui Chen
 ///////////////////////////////////////////////////////////
 
@@ -151,7 +151,8 @@ int main(int argc, char** argv)
 	// input
 	vector<Blob<float>*> input_vec;
 	Blob<float> blob(1, 3, IMAGE_SIZE, IMAGE_SIZE);
-	
+	Blob<float> label_blob(1, 20, 1, 1);
+
 	IplImage *small_image = cvCreateImage(cvSize(IMAGE_SIZE, IMAGE_SIZE), 8, 3);
 
 
@@ -172,7 +173,11 @@ int main(int argc, char** argv)
 			}
 		}
 	}
+	for(int p = 0; p < 20; p++)
+		label_blob.mutable_cpu_data()[label_blob.offset(0,p,0,0)] = 0;
+
 	input_vec.push_back(&blob);
+	//input_vec.push_back(&label_blob);
 
 	float loss;
 
