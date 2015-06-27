@@ -18,7 +18,7 @@
 
 
 
-#define IMAGE_SIZE 320
+#define IMAGE_SIZE 224
 
 using namespace caffe;  // NOLINT(build/namespaces)
 using namespace std;
@@ -114,9 +114,10 @@ void get_top5(float *feature, int arr[5])
 
 int main(int argc, char** argv)
 {
-	caffe::GlobalInit(&argc, &argv);
+	bool debug_info_ = false;
+	if(!debug_info_) caffe::GlobalInit(&argc, &argv);
 
-	vector<vector<float>> pTable = get_pixel( "C:/Users/cht2pal/Desktop/caffe-old-unpool/examples/seg_map/pixel.txt");
+	vector<vector<float>> pTable = get_pixel( "G:/EDU/_SOURCE_CODE/caffe/caffe-decouple/examples/seg_map/pixel.txt");
 	// Test mode
 	Caffe::set_phase(Caffe::TEST);
 
@@ -128,10 +129,16 @@ int main(int argc, char** argv)
 	Caffe::SetDevice(device_id);
 
 	// prototxt
-	Net<float> caffe_test_net("C:/Users/cht2pal/Desktop/caffe-old-unpool/examples/DecoupledNet/DecoupledNet_Full_anno_inference_deploy.prototxt");
+	//Net<float> caffe_test_net("C:/Users/Terry/Desktop/DecoupledNet/model/DecoupledNet_Full_anno/DecoupledNet_Full_anno_inference_deploy.prototxt");
 
+	//// caffemodel
+	//caffe_test_net.CopyTrainedLayersFrom("C:/Users/Terry/Desktop/DecoupledNet/model/DecoupledNet_Full_anno/DecoupledNet_Full_anno_inference.caffemodel");
+
+	Net<float> caffe_test_net("G:/EDU/_SOURCE_CODE/caffe/caffe-decouple/examples/DeconvNet/model/DeconvNet/DeconvNet_inference_deploy.prototxt");
 	// caffemodel
-	caffe_test_net.CopyTrainedLayersFrom("C:/Users/cht2pal/Desktop/caffe-old-unpool/examples/DecoupledNet/DecoupledNet_Full_anno_inference.caffemodel");
+	//caffe_test_net.CopyTrainedLayersFrom("C:/Users/cht2pal/Desktop/caffe-old-unpool/examples/live_net/VGG_ILSVRC_19_layers.caffemodel");
+	caffe_test_net.CopyTrainedLayersFrom("G:/EDU/_SOURCE_CODE/caffe/caffe-decouple/examples/DeconvNet/model/DeconvNet/DeconvNet_trainval_inference.caffemodel");
+
 
 	//Debug
 	//caffe_test_net.set_debug_info(true);
@@ -149,7 +156,7 @@ int main(int argc, char** argv)
 
 
 	caffe::Datum datum;
-	const char* img_name = "C:/Users/cht2pal/Desktop/caffe-old-unpool/examples/DeconvNet/inference/cat.jpg";//argv[1]; //
+	const char* img_name = "G:/EDU/_SOURCE_CODE/caffe/caffe-decouple/examples/seg_map/000079.jpg"; //argv[1]; //
 	IplImage *img = cvLoadImage(img_name);
 	cvShowImage("raw_image", img);
 
@@ -176,7 +183,71 @@ int main(int argc, char** argv)
 		LOG(INFO) << out_blob->num() << " " << out_blob->channels() << " " 
 			<< out_blob->height() << " " << out_blob->width() ;
 	}
-	Blob<float> *out_blob= result[2];
+	//Blob<float> *out_blob= result[0];
+
+
+	// Softmax
+	vector<Blob<float>*> top;
+	vector<Blob<float>*> bottom;
+	top.push_back(result[0]);
+	bottom.push_back(result[0]);
+
+	top[0]->Reshape(bottom[0]->num(), bottom[0]->channels(),
+		bottom[0]->height(), bottom[0]->width());
+	Blob<float> scale_;
+	Blob<float> sum_multiplier_;
+	sum_multiplier_.Reshape(1, bottom[0]->channels(), 1, 1);
+	float* multiplier_data = sum_multiplier_.mutable_cpu_data();
+	for (int i = 0; i < sum_multiplier_.count(); ++i) {
+		multiplier_data[i] = 1.;
+	}
+	scale_.Reshape(bottom[0]->num(), 1, bottom[0]->height(), bottom[0]->width());
+	const float* bottom_data = bottom[0]->cpu_data();
+	float* scale_data = scale_.mutable_cpu_data();
+
+	float* top_data = top[0]->mutable_cpu_data();
+	int num = bottom[0]->num();
+	int channels = bottom[0]->channels();
+	int dim = bottom[0]->count() / bottom[0]->num();
+	int spatial_dim = bottom[0]->height() * bottom[0]->width();
+	caffe_copy(bottom[0]->count(), bottom_data, top_data);
+
+	for (int i = 0; i < num; ++i) {
+		// initialize scale_data to the first plane
+		caffe_copy(spatial_dim, bottom_data + i * dim, scale_data);
+		for (int j = 0; j < channels; j++) {
+			for (int k = 0; k < spatial_dim; k++) {
+				scale_data[k] = std::max(scale_data[k],
+					bottom_data[i * dim + j * spatial_dim + k]);
+			}
+		}
+		if(debug_info_) for(int m = 0;m < 10; m++) cout << bottom_data[m] << " " << scale_data[m] <<" " << top_data[m] << endl;
+		
+		// subtraction
+		caffe_cpu_gemm<float>(CblasNoTrans, CblasNoTrans, channels, spatial_dim,
+			1, -1., sum_multiplier_.cpu_data(), scale_data, 1., top_data + i * dim);
+
+		if(debug_info_) for(int m = 0;m < 10; m++) cout << bottom_data[m] << " " << scale_data[m] <<" " << top_data[m] << endl;
+		
+		// exponentiation
+		caffe_exp<float>(dim, top_data + i * dim, top_data + i * dim);
+
+		if(debug_info_) for(int m = 0;m < 10; m++) cout << bottom_data[m] << " " << scale_data[m] <<" " << top_data[m] << endl;
+
+		// sum after exp
+		caffe_cpu_gemv<float>(CblasTrans, channels, spatial_dim, 1.,
+			top_data + i * dim, sum_multiplier_.cpu_data(), 0., scale_data);
+
+		if(debug_info_) for(int m = 0;m < 10; m++) cout << bottom_data[m] << " " << scale_data[m] <<" " << top_data[m] << endl;
+
+		// division
+		for (int j = 0; j < channels; j++) {
+			caffe_div(spatial_dim, top_data + top[0]->offset(i, j), scale_data,
+				top_data + top[0]->offset(i, j));
+		}
+	}
+
+	Blob<float> *out_blob= top[0];
 
 	vector<Mat> maps;
 	double sum_pix = 0;
@@ -190,17 +261,19 @@ int main(int argc, char** argv)
 		for(int j=0; j < out_blob->width(); j++){
 			vector<pair<float, int>> v;
 			for(int c = 0; c < out_blob->channels(); c++){ // for 21 channels
-				v.push_back( make_pair(result[2]->cpu_data()[idx + IMAGE_SIZE*IMAGE_SIZE*c], c) );
+				v.push_back( make_pair(out_blob->cpu_data()[idx + IMAGE_SIZE*IMAGE_SIZE*c], c) );
 			}
 			std::sort(v.begin(), v.end(), [](const std::pair<float, int> &left, const std::pair<float, int> &right) {
 					return left.first >  right.first;} );	
 			//apply pixel
 			seg_map.at<float>(i,j) = v[0].second;
-							
+			//seg_map.at<float>(i,j) = top[0]->cpu_data()[IMAGE_SIZE*IMAGE_SIZE*7 + idx];
 			idx++;
 		}
 	}
 	imshow("seg_map", seg_map);
+
+
 
 	// restore seg map to image
 	Mat	res_map;
@@ -215,7 +288,7 @@ int main(int argc, char** argv)
 			}
 		}
 	}
-			
+
 	cvShowImage("Test", final_seg);
 
 	float output[20];
