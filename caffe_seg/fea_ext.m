@@ -15,7 +15,7 @@ config.im_sz = 320;
 
 %% DecoupledNet Full annotations
 config.model_name = 'DecoupledNet_Full_anno';
-config.Path.CNN.script_path = 'C:/Users/cht2pal/Desktop/caffe-old-unpool/examples/DecoupledNet';
+config.Path.CNN.script_path = './examples/DecoupledNet';
 config.Path.CNN.model_data = [config.Path.CNN.script_path '/DecoupledNet_Full_anno_inference.caffemodel'];
 config.Path.CNN.model_proto = [config.Path.CNN.script_path '/DecoupledNet_Full_anno_inference_deploy.prototxt'];
 
@@ -27,7 +27,6 @@ load(config.cmap);
 % init_VOC2012_TEST;
 
 % initialize caffe
-% addpath(fullfile(config.Path.CNN.caffe_root, 'matlab/caffe'));
 fprintf('initializing caffe..\n');
 if caffe('is_initialized')
     caffe('reset')
