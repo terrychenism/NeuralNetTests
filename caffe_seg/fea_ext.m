@@ -49,12 +49,12 @@ end
 fprintf('start generating result\n');
 fprintf('caffe model: %s\n', config.Path.CNN.model_proto);
 fprintf('caffe weight: %s\n', config.Path.CNN.model_data);
-
+img_path = 'F:\VOC2012\VOCdevkit\VOC2012\JPEGImages\';
 [names, labels] = textread('F:\VOC2012\VOCdevkit\VOC2012\ImageSets\Main\aeroplane_val.txt', '%s %d');
 for i = 1:size(labels,1)
     if labels(i) == 1
-    imagename = strcat('F:\VOC2012\VOCdevkit\VOC2012\JPEGImages\', names(i), '.jpg');
-    I = imread(imagename{1,1});
+    filename = strcat(img_path, names{i,1}, '.jpg');
+    I = imread(filename);
     % I=imread('F:\Coding\DecoupledNet\inference\data\VOC2012_TEST\JPEGImages\2008_002695.jpg');
 
     im_sz = max(size(I,1),size(I,2));
