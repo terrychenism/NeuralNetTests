@@ -65,9 +65,9 @@ for i = 1:size(labels,1)
     cls_score = cnn_output{1};
     label = single(cls_score .* (cls_score > 0.5));  
     cnn_output = caffe('forward', {caffe_im;label});
-    pool5 = cnn_output{size(cnn_output,1)-1, 1};
-    [seg, segmask] = max(pool5, [], 3);
-    imagesc(seg)
+    pool5 = cnn_output{3, 1};
+%     [seg, segmask] = max(pool5, [], 3);
+    imagesc(pool5(:,:,1))
     pause;
     end
 end
