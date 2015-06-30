@@ -15,7 +15,7 @@ config.im_sz = 320;
 
 %% DecoupledNet Full annotations
 config.model_name = 'DecoupledNet_Full_anno';
-config.Path.CNN.script_path = './examples/DecoupledNet';
+config.Path.CNN.script_path ='../model/DecoupledNet_Full_anno';
 config.Path.CNN.model_data = [config.Path.CNN.script_path '/DecoupledNet_Full_anno_inference.caffemodel'];
 config.Path.CNN.model_proto = [config.Path.CNN.script_path '/DecoupledNet_Full_anno_inference_deploy.prototxt'];
 
@@ -50,22 +50,33 @@ fprintf('start generating result\n');
 fprintf('caffe model: %s\n', config.Path.CNN.model_proto);
 fprintf('caffe weight: %s\n', config.Path.CNN.model_data);
 
-I=imread('000079.jpg');
-  
-im_sz = max(size(I,1),size(I,2));
-caffe_im = padarray(I,[im_sz - size(I,1), im_sz - size(I,2)],'post');
-caffe_im = preprocess_image(caffe_im, config.im_sz);
-label = single(zeros([1,1,20]));
-label(1,1,8) = 1;
-cnn_output = caffe('forward', {caffe_im;label});
+[names, labels] = textread('F:\VOC2012\VOCdevkit\VOC2012\ImageSets\Main\aeroplane_val.txt', '%s %d');
+for i = 1:size(labels,1)
+    if labels(i) == 1
+    imagename = strcat('F:\VOC2012\VOCdevkit\VOC2012\JPEGImages\', names(i), '.jpg');
+    I = imread(imagename{1,1});
+    % I=imread('F:\Coding\DecoupledNet\inference\data\VOC2012_TEST\JPEGImages\2008_002695.jpg');
 
-pool5 = cnn_output{size(cnn_output,1)-1, 1};
-image = uint8(zeros(100,100));
-idx = 1;
-for i = 1:10:100
-    for j = 1:10:100
-        image(i:i+9, j:j+9) =   uint8(pool5(:,:,idx));
-        idx = idx+1;
+    im_sz = max(size(I,1),size(I,2));
+    caffe_im = padarray(I,[im_sz - size(I,1), im_sz - size(I,2)],'post');
+    caffe_im = preprocess_image(caffe_im, config.im_sz);
+    label = single(zeros([1,1,20]));
+    cnn_output = caffe('forward', {caffe_im;label});
+    cls_score = cnn_output{1};
+    label = single(cls_score .* (cls_score > 0.5));  
+    cnn_output = caffe('forward', {caffe_im;label});
+    pool5 = cnn_output{size(cnn_output,1)-1, 1};
+    [seg, segmask] = max(pool5, [], 3);
+    imagesc(seg)
+    pause;
     end
 end
-imagesc(image);
+% image = uint8(zeros(100,100));
+% idx = 720;
+% for i = 1:10:100
+%     for j = 1:10:100
+%         image(i:i+9, j:j+9) =   uint8(pool5(:,:,idx));
+%         idx = idx+1;
+%     end
+% end
+% imagesc(image);
