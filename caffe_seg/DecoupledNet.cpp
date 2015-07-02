@@ -339,7 +339,7 @@ int main(int argc, char** argv)
 		for(int w = 0; w < cropped_score_map.cols; w++){
 			int p = cropped_score_map.at<float>(h,w);
 			for (int c = 0; c < 3; c++){
-				final_seg->imageData[h*img->widthStep+w*img->nChannels+c] = pTable[p][c]*255;
+				final_seg->imageData[h*img->widthStep+w*img->nChannels+c] = pTable[p][2-c]*255;
 			}
 		}
 	}
