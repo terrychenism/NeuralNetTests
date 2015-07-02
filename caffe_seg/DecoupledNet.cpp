@@ -182,7 +182,7 @@ int main(int argc, char** argv)
 
 	if(!debug_info_) caffe::GlobalInit(&argc, &argv);
 
-	vector<vector<float>> pTable = get_pixel( "pixel.txt");
+	vector<vector<float>> pTable = get_pixel(argv[1]);
 	// Test mode
 	Caffe::set_phase(Caffe::TEST);
 
@@ -194,10 +194,10 @@ int main(int argc, char** argv)
 	Caffe::SetDevice(device_id);
 
 	// prototxt
-	Net<float> caffe_test_net(argv[1]);
+	Net<float> caffe_test_net(argv[2]);
 
 	// caffemodel
-	caffe_test_net.CopyTrainedLayersFrom(argv[2]);
+	caffe_test_net.CopyTrainedLayersFrom(argv[3]);
 
 	//Debug
 	//caffe_test_net.set_debug_info(true);
@@ -216,8 +216,8 @@ int main(int argc, char** argv)
 
 
 	caffe::Datum datum;
-	const char* img_name = argv[3]; 
-	IplImage *img = cvLoadImage(img_name);
+	//const char* img_name = argv[3]; 
+	IplImage *img = cvLoadImage(argv[4]);
 	cvShowImage("raw_image", img);
 
 	cvResize(img, small_image);
@@ -252,8 +252,8 @@ int main(int argc, char** argv)
 	outfile.close();*/
 
 	for(int p = 0; p < 20; p++){
-		if(result[0]->cpu_data()[i] > 0.5)
-			label_blob.mutable_cpu_data()[label_blob.offset(0,p,0,0)] = 1;
+		if(result[0]->cpu_data()[p] > 0.5)
+			label_blob.mutable_cpu_data()[label_blob.offset(0,p,0,0)] = result[0]->cpu_data()[p];
 		else
 			label_blob.mutable_cpu_data()[label_blob.offset(0,p,0,0)] = 0;
 	}
@@ -293,7 +293,7 @@ int main(int argc, char** argv)
 			// push data
 			input_vec.push_back(&blob);
 			// push label
-			labels.mutable_cpu_data()[labels.offset(0,i,0,0)] = 1;
+			labels.mutable_cpu_data()[labels.offset(0,i,0,0)] = cls_score->cpu_data()[i];
 			input_vec.push_back(&labels);
 			float loss_;
 			const vector<Blob<float>*>& cnn_output = caffe_test_net.Forward(input_vec, &loss_);
