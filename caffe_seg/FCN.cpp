@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////
 ////// FCN.cpp
-////// Created by Tairui Chen on 2015-06-23
+////// Created by Tairui Chen on 2015-07-01
 ////// Copyright (c) 2015 Tairui Chen. All rights reserved.
 ///////////////////////////////////////////////////////////
 
@@ -116,7 +116,7 @@ int main(int argc, char** argv)
 {
 	caffe::GlobalInit(&argc, &argv);
 
-	vector<vector<float>> pTable = get_pixel( argv[1]/*"G:/EDU/_SOURCE_CODE/caffe/caffe-decouple/examples/seg_map/pixel.txt"*/);
+	vector<vector<float>> pTable = get_pixel(argv[1]);
 	// Test mode
 	Caffe::set_phase(Caffe::TEST);
 
@@ -128,9 +128,9 @@ int main(int argc, char** argv)
 	Caffe::SetDevice(device_id);
 
 	// prototxt
-	Net<float> caffe_test_net(argv[2]/*"G:/EDU/_SOURCE_CODE/caffe/caffe-decouple/examples/DeconvNet/model/FCN/fcn-8s-pascal-deploy.prototxt"*/);
+	Net<float> caffe_test_net(argv[2]);
 	// caffemodel
-	caffe_test_net.CopyTrainedLayersFrom(argv[3]/*"G:/EDU/_SOURCE_CODE/caffe/caffe-decouple/examples/DeconvNet/model/FCN/fcn-8s-pascal.caffemodel"*/);
+	caffe_test_net.CopyTrainedLayersFrom(argv[3]);
 
 	//Debug
 	//caffe_test_net.set_debug_info(true);
@@ -148,7 +148,7 @@ int main(int argc, char** argv)
 
 
 	caffe::Datum datum;
-	const char* img_name = argv[4]; //"G:/EDU/_SOURCE_CODE/caffe/caffe-decouple/examples/seg_map/000012.jpg"; //
+	const char* img_name = argv[4];
 	IplImage *img = cvLoadImage(img_name);
 	cvShowImage("raw_image", img);
 
