@@ -57,11 +57,14 @@ static mxArray* do_forward(const mxArray* const bottom) {
       input_blobs.size()) {
     mex_error("Invalid input size");
   }
+
+  LOG(INFO) << "input_blobs size: " << input_blobs.size(); 
   for (unsigned int i = 0; i < input_blobs.size(); ++i) {
     const mxArray* const elem = mxGetCell(bottom, i);
     if (!mxIsSingle(elem)) {
       mex_error("MatCaffe require single-precision float point data");
     }
+	LOG(INFO) << "NUMBER OF ELEMENTS: " << mxGetNumberOfElements(elem);
     if (mxGetNumberOfElements(elem) != input_blobs[i]->count()) {
       std::string error_msg;
       error_msg += "MatCaffe input size does not match the input size ";
@@ -71,6 +74,10 @@ static mxArray* do_forward(const mxArray* const bottom) {
 
     const float* const data_ptr =
         reinterpret_cast<const float* const>(mxGetPr(elem));
+	int m = 0;
+	while(data_ptr[m] != NULL) m++;
+	LOG(INFO) << "data size: " << m;
+
     switch (Caffe::mode()) {
     case Caffe::CPU:
       caffe_copy(input_blobs[i]->count(), data_ptr,
@@ -422,7 +429,7 @@ void mexFunction(MEX_ARGS) {
     init_key = static_cast<double>(caffe_rng_rand());
     FLAGS_alsologtostderr = 1;
     initGlog();
-    FILE *stream = freopen( "log.txt", "w", stderr );  
+    FILE *stream = freopen( ".\\log\\log.txt", "w", stderr );  
   
     if( stream == NULL )
     {
