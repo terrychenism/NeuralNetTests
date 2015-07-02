@@ -1,7 +1,7 @@
 ///////////////////////////////////////////////////////////
-////// DecoupledNet.cpp
-////// 2015-06-23
-////// Tairui Chen
+////// FCN.cpp
+////// Created by Tairui Chen on 2015-07-01
+////// Copyright (c) 2015 Tairui Chen. All rights reserved.
 ///////////////////////////////////////////////////////////
 
 #include <cuda_runtime.h>
@@ -182,7 +182,7 @@ int main(int argc, char** argv)
 
 	if(!debug_info_) caffe::GlobalInit(&argc, &argv);
 
-	vector<vector<float>> pTable = get_pixel( "C:/Users/cht2pal/Desktop/caffe-old-unpool/examples/seg_map/pixel.txt");
+	vector<vector<float>> pTable = get_pixel( "pixel.txt");
 	// Test mode
 	Caffe::set_phase(Caffe::TEST);
 
@@ -194,10 +194,10 @@ int main(int argc, char** argv)
 	Caffe::SetDevice(device_id);
 
 	// prototxt
-	Net<float> caffe_test_net("C:/Users/cht2pal/Desktop/caffe-old-unpool/examples/DecoupledNet/DecoupledNet_Full_anno_inference_deploy_raw.prototxt");
+	Net<float> caffe_test_net(argv[1]);
 
 	// caffemodel
-	caffe_test_net.CopyTrainedLayersFrom("C:/Users/cht2pal/Desktop/caffe-old-unpool/examples/DecoupledNet/DecoupledNet_Full_anno_inference.caffemodel");
+	caffe_test_net.CopyTrainedLayersFrom(argv[2]);
 
 	//Debug
 	//caffe_test_net.set_debug_info(true);
@@ -216,7 +216,7 @@ int main(int argc, char** argv)
 
 
 	caffe::Datum datum;
-	const char* img_name = "C:/Users/cht2pal/Desktop/example/DecoupledNet/inference/data/VOC2012_TEST/JPEGImages/2008_000012.jpg";//argv[1]; //
+	const char* img_name = argv[3]; 
 	IplImage *img = cvLoadImage(img_name);
 	cvShowImage("raw_image", img);
 
@@ -246,7 +246,7 @@ int main(int argc, char** argv)
 		}
 	}
 	//Blob<float> *out_blob= result[0];
-	/*ofstream outfile("cnn_output7.txt");
+	/*ofstream outfile("cnn_output.txt");
 	for (int ind = 0;ind < result[2]->height() * result[2]->width() ; ind++)
 	outfile <<  result[2]->cpu_data()[ind] << "   ";
 	outfile.close();*/
@@ -274,16 +274,6 @@ int main(int argc, char** argv)
 	Mat seg_map(IMAGE_SIZE,IMAGE_SIZE, CV_32FC1, Scalar(0,0,0));
 	for(int i = 0; i < out_blob->height(); i++){
 		for(int j=0; j < out_blob->width(); j++){
-			//vector<pair<float, int>> v;
-			//for(int c = 0; c < out_blob->channels(); c++){ // for 21 channels
-			//	v.push_back( make_pair(out_blob->cpu_data()[idx + IMAGE_SIZE*IMAGE_SIZE*c], c) );
-			//}
-
-			//std::sort(v.begin(), v.end(), [](const std::pair<float, int> &left, const std::pair<float, int> &right) {
-			//		return left.first >  right.first;} );	
-			////apply pixel
-			//seg_map.at<float>(i,j) = v[0].second;
-
 			seg_map.at<float>(i,j) = out_blob->cpu_data()[idx];	
 			idx++;
 		}
