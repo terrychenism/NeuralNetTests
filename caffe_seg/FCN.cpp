@@ -116,7 +116,7 @@ int main(int argc, char** argv)
 {
 	caffe::GlobalInit(&argc, &argv);
 
-	vector<vector<float>> pTable = get_pixel( "C:/Users/cht2pal/Desktop/caffe-old-unpool/examples/seg_map/pixel.txt");
+	vector<vector<float>> pTable = get_pixel( argv[1]/*"G:/EDU/_SOURCE_CODE/caffe/caffe-decouple/examples/seg_map/pixel.txt"*/);
 	// Test mode
 	Caffe::set_phase(Caffe::TEST);
 
@@ -128,10 +128,9 @@ int main(int argc, char** argv)
 	Caffe::SetDevice(device_id);
 
 	// prototxt
-	Net<float> caffe_test_net("C:/Users/cht2pal/Desktop/caffe-old-unpool/examples/DeconvNet_raw/model/FCN/fcn-8s-pascal-deploy.prototxt");
-
+	Net<float> caffe_test_net(argv[2]/*"G:/EDU/_SOURCE_CODE/caffe/caffe-decouple/examples/DeconvNet/model/FCN/fcn-8s-pascal-deploy.prototxt"*/);
 	// caffemodel
-	caffe_test_net.CopyTrainedLayersFrom("C:/Users/cht2pal/Desktop/caffe-old-unpool/examples/DeconvNet_raw/model/FCN/fcn-8s-pascal.caffemodel");
+	caffe_test_net.CopyTrainedLayersFrom(argv[3]/*"G:/EDU/_SOURCE_CODE/caffe/caffe-decouple/examples/DeconvNet/model/FCN/fcn-8s-pascal.caffemodel"*/);
 
 	//Debug
 	//caffe_test_net.set_debug_info(true);
@@ -149,7 +148,7 @@ int main(int argc, char** argv)
 
 
 	caffe::Datum datum;
-	const char* img_name = argv[1]; //"C:/Users/cht2pal/Desktop/caffe-old-unpool/examples/DeconvNet/inference/cat.jpg";//
+	const char* img_name = argv[4]; //"G:/EDU/_SOURCE_CODE/caffe/caffe-decouple/examples/seg_map/000012.jpg"; //
 	IplImage *img = cvLoadImage(img_name);
 	cvShowImage("raw_image", img);
 
