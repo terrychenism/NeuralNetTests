@@ -100,6 +100,7 @@ def deepdream(net, base_img, iter_n=10, octave_n=4, octave_scale=1.4, end='incep
 
 img = np.float32(PIL.Image.open(caffe_root + 'examples/images/1.jpg'))
 # showarray(img)
+caffe.set_mode_gpu()
 
 # _=deepdream(net, img)
 # _=deepdream(net, img, end='inception_3b/5x5_reduce')
