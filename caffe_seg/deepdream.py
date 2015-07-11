@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.ndimage as nd
 import PIL.Image
+import time
 from IPython.display import clear_output, Image, display
 from google.protobuf import text_format
 
@@ -22,8 +23,15 @@ def showarray(a, fmt='jpeg'):
     display(Image(data=f.getvalue()))
 
 model_path = '../models/bvlc_googlenet/' # substitute your path here
-net_fn   = model_path + 'deploy.prototxt'
-param_fn = 'G:/EDU/_SOURCE_CODE/caffe/caffe-prelu/examples/imagenet/bvlc_googlenet.caffemodel'
+# GoogleNet
+# net_fn   = model_path + 'deploy.prototxt'
+# param_fn = 'E:/caffe/caffe-prelu/examples/imagenet/bvlc_googlenet.caffemodel'
+# AlexNet place205
+# net_fn   = 'E:/caffe/caffe-prelu/examples/googlenet_places205/places205CNN_deploy_alex.prototxt'
+# param_fn = 'E:/caffe/caffe-prelu/examples/googlenet_places205/places205CNN_iter_300000_upgraded.caffemodel'
+# GoogleNet place205
+net_fn   = 'E:/caffe/caffe-prelu/examples/googlenet_places205/deploy_places205_deepdream.prototxt'
+param_fn = 'E:/caffe/caffe-prelu/examples/googlenet_places205/googlelet_places205_train_iter_2400000.caffemodel'
 
 # Patching model to be able to compute gradients.
 # Note that you can also manually add "force_backward: true" line to "deploy.prototxt".
@@ -64,7 +72,7 @@ def make_step(net, step_size=1.5, end='inception_4c/output', jitter=32, clip=Tru
         bias = net.transformer.mean['data']
         src.data[:] = np.clip(src.data, -bias, 255-bias)    
 
-def deepdream(net, base_img, iter_n=10, octave_n=4, octave_scale=1.4, end='inception_4c/output', clip=True, **step_params):
+def deepdream(net, base_img, iter_n=10, octave_n=4, octave_scale=1.4, end='inception_5b/1x1', clip=True, **step_params):
     # prepare base images for all octaves
     octaves = [preprocess(net, base_img)]
     for i in xrange(octave_n-1):
@@ -86,19 +94,20 @@ def deepdream(net, base_img, iter_n=10, octave_n=4, octave_scale=1.4, end='incep
             
             # visualization
             vis = deprocess(net, src.data[0])
+            # plt.imshow(np.uint8(vis))
             if not clip: # adjust image contrast if clipping is disabled
                 vis = vis*(255.0/np.percentile(vis, 99.98))
             showarray(vis)
             print octave, i, end, vis.shape
             clear_output(wait=True)
-            
+
         # extract details produced on the current octave
         detail = src.data[0]-octave_base
     # returning the resulting image
     return deprocess(net, src.data[0])
 
 
-img = np.float32(PIL.Image.open(caffe_root + 'examples/images/1.jpg'))
+img = np.float32(PIL.Image.open(caffe_root + 'examples/images/sky1024px.jpg'))
 # showarray(img)
 caffe.set_mode_gpu()
 
@@ -117,8 +126,8 @@ frame = img
 frame_i = 0
 h, w = frame.shape[:2]
 s = 0.05 # scale coefficient
-for i in xrange(1):
-    frame = deepdream(net, frame, 2)
+for i in xrange(5):
+    frame = deepdream(net, frame)
     PIL.Image.fromarray(np.uint8(frame)).save(dir + "/%04d.jpg"%frame_i)
     frame = nd.affine_transform(frame, [1-s,1-s,1], [h*s/2,w*s/2,0], order=1)
     frame_i += 1
