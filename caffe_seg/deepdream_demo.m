@@ -14,8 +14,11 @@ mean_pix =  [104.0, 116.0, 122.0];
 net_model = 'deepdream.prototxt';
 net_weights = 'bvlc_googlenet.caffemodel';
 
-net = caffe.Net(net_model,net_weights,'train');
-im = single(imread('small.jpg'));
+net = caffe.Net(net_model,net_weights,'test');
+im = single(imread('sky1024px.jpg'));
+[H, W, C] = size(im);
+blob_index = net.name2blob_index('data');
+net.blob_vec(blob_index).reshape([ H  W 3 1])
 % im = randn(size(im))*100; % use random noise
 src = deepdream(net, im, 15);
 images = src{1};
