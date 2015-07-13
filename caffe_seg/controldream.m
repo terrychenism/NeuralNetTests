@@ -18,15 +18,17 @@ net_weights = 'bvlc_googlenet.caffemodel';
 
 net = caffe.Net(net_model,net_weights,'test');
 im = single(imread('sky1024px.jpg'));
+im = permute(im, [2, 1, 3]); % flip width and height
 % im = randn(size(im))*100; % use random noise
 
 guide = single(imread('flowers.jpg'));
+guide = permute(guide, [2, 1, 3]); % flip width and height
 guide_features = generate_guide(net, guide);
  
 src = deepdream(net, im, 30, guide_features);
 images = src{1};
 im_data = images(:, :, [3, 2, 1]); 
-
+im_data = permute(im_data, [2, 1, 3]);  % flip width and height
 
 for c = 1:3
     im_data(:, :, c) = im_data(:, :, c) + mean_pix(c);
@@ -44,7 +46,7 @@ function octaves = deepdream(net, base_img, iter, guide_features)
     step_size = 1.5;
     use_cv_norm = 0;
     octaves = {preprocess(base_img)};
-    end_layer = 'inception_4c/output';
+    end_layer = 'inception_3b/output';
     
     [H, W, C] = size(base_img);
     blob_index = net.name2blob_index('data');
@@ -59,8 +61,8 @@ function octaves = deepdream(net, base_img, iter, guide_features)
         %net.forward_prefilled();
         net.forward_to(end_layer);
         dst = net.blobs(end_layer).get_data();
-        % specify the optimization objective
-        dst = objective_guide(dst, guide_features);
+       
+        dst = objective_guide(dst, guide_features); % specify the optimization objective
         
         net.blobs(end_layer).set_diff(dst);
         %net.backward_prefilled();
@@ -96,7 +98,7 @@ end
 
 function dst = generate_guide(net, base_img)
     octaves = {preprocess(base_img)};
-    end_layer = 'inception_4c/output';
+    end_layer = 'inception_3b/output';
     
     [H, W, C] = size(base_img);
     blob_index = net.name2blob_index('data');
