@@ -11,7 +11,7 @@ caffe.set_device(gpu_id);
 mean_pix =  [104.0, 116.0, 122.0];
 
 
-net_model = 'deepdream.prototxt';
+net_model = 'deploy.prototxt';
 net_weights = 'bvlc_googlenet.caffemodel';
 
 net = caffe.Net(net_model,net_weights,'test');
@@ -41,10 +41,19 @@ function octaves = deepdream(net, base_img, iter)
     use_cv_norm = 0;
     octaves = {preprocess(base_img)};
     for i = 1:iter
-        dst = net.forward(octaves);
-        g = net.backward(dst);
-        f = g{1};
-        octaves{1} = octaves{1} +  step_size/mean(abs(f(:))) * f;
+%         dst = net.forward(octaves);
+%         g = net.backward(dst);
+%         g = g{1};
+
+        net.blobs('data').set_data(octaves{1});
+        net.forward_prefilled();
+        dst = net.blobs('inception_4c/output').get_data();
+        
+        net.blobs('inception_4c/output').set_diff(dst);
+        net.backward_prefilled();
+        g = net.blobs('data').get_diff();
+        
+        octaves{1} = octaves{1} +  step_size/mean(abs(g(:))) * g;
         if use_cv_norm
             I = octaves{1};
             Gx = smoothL1(I(2:end-1,:,:) - I(1:end-2,:,:)) - smoothL1(I(3:end,:,:) - I(2:end-1,:,:));
