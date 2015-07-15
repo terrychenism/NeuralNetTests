@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////
-////// DecoupledNet.cu
+////// FCN.cpp
 ////// Created by Tairui Chen on 2015-07-11
 ////// Copyright (c) 2015 Tairui Chen. All rights reserved.
 ///////////////////////////////////////////////////////////
@@ -26,82 +26,6 @@ using namespace cv;
 
 bool debug_info_ = false;
 
-
-
-template <typename Dtype>
-__global__ void kernel_channel_max(const int num, const int channels,
-    const int spatial_dim, const Dtype* data, Dtype* out) {
-  CUDA_KERNEL_LOOP(index, num * spatial_dim) {
-    int n = index / spatial_dim;
-    int s = index % spatial_dim;
-    Dtype maxval = -FLT_MAX;
-    for (int c = 0; c < channels; ++c) {
-      maxval = max(data[(n * channels + c) * spatial_dim + s], maxval);
-    }
-    out[index] = maxval;
-  }
-}
-
-template <typename Dtype>
-__global__ void kernel_channel_subtract(const int num, const int channels,
-    const int spatial_dim, Dtype* data, const Dtype* channel_max) {
-  CUDA_KERNEL_LOOP(index, num * spatial_dim) {
-    int n = index / spatial_dim;
-    int s = index % spatial_dim;
-    for (int c = 0; c < channels; ++c) {
-      data[(n * channels + c) * spatial_dim + s] -= channel_max[index];
-    }
-  }
-}
-
-template <typename Dtype>
-__global__ void kernel_exp(const int count, const Dtype* data, Dtype* out) {
-  CUDA_KERNEL_LOOP(index, count) {
-    out[index] = exp(data[index]);
-  }
-}
-
-template <typename Dtype>
-__global__ void kernel_channel_sum(const int num, const int channels,
-    const int spatial_dim, const Dtype* data, Dtype* channel_sum) {
-  CUDA_KERNEL_LOOP(index, num * spatial_dim) {
-    int n = index / spatial_dim;
-    int s = index % spatial_dim;
-    Dtype sum = 0;
-    for (int c = 0; c < channels; ++c) {
-      sum += data[(n * channels + c) * spatial_dim + s];
-    }
-    channel_sum[index] = sum;
-  }
-}
-
-template <typename Dtype>
-__global__ void kernel_channel_div(const int num, const int channels,
-    const int spatial_dim, Dtype* data, const Dtype* channel_sum) {
-  CUDA_KERNEL_LOOP(index, num * spatial_dim) {
-    int n = index / spatial_dim;
-    int s = index % spatial_dim;
-    for (int c = 0; c < channels; ++c) {
-      data[(n * channels + c) * spatial_dim + s] /= channel_sum[index];
-    }
-  }
-}
-
-template <typename Dtype>
-__global__ void kernel_channel_dot(const int num, const int channels,
-    const int spatial_dim, const Dtype* data_1, const Dtype* data_2,
-    Dtype* channel_dot) {
-  CUDA_KERNEL_LOOP(index, num * spatial_dim) {
-    int n = index / spatial_dim;
-    int s = index % spatial_dim;
-    Dtype dot = 0;
-    for (int c = 0; c < channels; ++c) {
-      dot += (data_1[(n * channels + c) * spatial_dim + s]
-          * data_2[(n * channels + c) * spatial_dim + s]);
-    }
-    channel_dot[index] = dot;
-  }
-}
 
 vector<vector<float>>  get_pixel(char fileneme[256]){
 	std::fstream myfile(fileneme, std::ios_base::in);
@@ -253,7 +177,7 @@ vector<Blob<float>*> do_softmax(Blob<float>* result){
 }
 
 template <typename Dtype>
-vector<Blob<float>*> do_gpu_softmax(Blob<float>* result){
+vector<Blob<Dtype>*> do_gpu_softmax2(Blob<Dtype>* result){
     vector<Blob<Dtype>*> top;
 	vector<Blob<Dtype>*> bottom;
 	top.push_back(result);
@@ -269,8 +193,6 @@ vector<Blob<float>*> do_gpu_softmax(Blob<float>* result){
 		multiplier_data[i] = 1.;
 	}
 	scale_.Reshape(bottom[0]->num(), 1, bottom[0]->height(), bottom[0]->width());
-	const Dtype* bottom_data = bottom[0]->cpu_data();
-	float* scale_data = scale_.mutable_cpu_data();
 
 	const Dtype* bottom_data = bottom[0]->gpu_data();
 	float* top_data = top[0]->mutable_gpu_data();
@@ -279,35 +201,72 @@ vector<Blob<float>*> do_gpu_softmax(Blob<float>* result){
 	int channels = bottom[0]->channels();
 	int spatial_dim = bottom[0]->height() * bottom[0]->width();
 	caffe_copy(bottom[0]->count(), bottom_data, top_data);
-	// We need to subtract the max to avoid numerical issues, compute the exp,
-	// and then normalize.
-	// compute max
-	// NOLINT_NEXT_LINE(whitespace/operators)
-	kernel_channel_max<Dtype><<<CAFFE_GET_BLOCKS(num * spatial_dim),
-		CAFFE_CUDA_NUM_THREADS>>>(num, channels, spatial_dim, top_data,
-		scale_data);
-	// subtract
-	// NOLINT_NEXT_LINE(whitespace/operators)
-	kernel_channel_subtract<Dtype><<<CAFFE_GET_BLOCKS(num * spatial_dim),
-		CAFFE_CUDA_NUM_THREADS>>>(num, channels, spatial_dim, top_data,
-		scale_data);
-	// exponentiate
-	// NOLINT_NEXT_LINE(whitespace/operators)
-	kernel_exp<Dtype><<<CAFFE_GET_BLOCKS(num * channels * spatial_dim),
-		CAFFE_CUDA_NUM_THREADS>>>(num * channels * spatial_dim, top_data,
-		top_data);
-	// sum after exp
-	// NOLINT_NEXT_LINE(whitespace/operators)
-	kernel_channel_sum<Dtype><<<CAFFE_GET_BLOCKS(num * spatial_dim),
-		CAFFE_CUDA_NUM_THREADS>>>(num, channels, spatial_dim, top_data,
-		scale_data);
-	// divide
-	// NOLINT_NEXT_LINE(whitespace/operators)
-	kernel_channel_div<Dtype><<<CAFFE_GET_BLOCKS(num * spatial_dim),
-		CAFFE_CUDA_NUM_THREADS>>>(num, channels, spatial_dim, top_data,
-		scale_data);
 
 	return top;
+}
+template <typename Dtype>
+vector<Blob<Dtype>*> do_gpu_softmax(Blob<Dtype>* result){
+	vector<Blob<float>*> top;
+	vector<Blob<float>*> bottom;
+	top.push_back(result);
+	bottom.push_back(result);
+
+	top[0]->Reshape(bottom[0]->num(), bottom[0]->channels(),
+		bottom[0]->height(), bottom[0]->width());
+	Blob<float> scale_;
+	Blob<float> sum_multiplier_;
+	sum_multiplier_.Reshape(1, bottom[0]->channels(), 1, 1);
+	float* multiplier_data = sum_multiplier_.mutable_gpu_data();
+	for (int i = 0; i < sum_multiplier_.count(); ++i) {
+		multiplier_data[i] = 1.;
+	}
+	scale_.Reshape(bottom[0]->num(), 1, bottom[0]->height(), bottom[0]->width());
+	const float* bottom_data = bottom[0]->gpu_data();
+	float* scale_data = scale_.mutable_gpu_data();
+
+	float* top_data = top[0]->mutable_gpu_data();
+	int num = bottom[0]->num();
+	int channels = bottom[0]->channels();
+	int dim = bottom[0]->count() / bottom[0]->num();
+	int spatial_dim = bottom[0]->height() * bottom[0]->width();
+	caffe_copy(bottom[0]->count(), bottom_data, top_data);
+
+	for (int i = 0; i < num; ++i) {
+		// initialize scale_data to the first plane
+		caffe_copy(spatial_dim, bottom_data + i * dim, scale_data);
+		for (int j = 0; j < channels; j++) {
+			for (int k = 0; k < spatial_dim; k++) {
+				scale_data[k] = std::max(scale_data[k],
+					bottom_data[i * dim + j * spatial_dim + k]);
+			}
+		}
+		if(debug_info_) for(int m = 0;m < 10; m++) cout << bottom_data[m] << " " << scale_data[m] <<" " << top_data[m] << endl;
+
+		// subtraction
+		caffe_gpu_gemm<float>(CblasNoTrans, CblasNoTrans, channels, spatial_dim,
+			1, -1., sum_multiplier_.cpu_data(), scale_data, 1., top_data + i * dim);
+
+		if(debug_info_) for(int m = 0;m < 10; m++) cout << bottom_data[m] << " " << scale_data[m] <<" " << top_data[m] << endl;
+
+		// exponentiation
+		caffe_exp<float>(dim, top_data + i * dim, top_data + i * dim);
+
+		if(debug_info_) for(int m = 0;m < 10; m++) cout << bottom_data[m] << " " << scale_data[m] <<" " << top_data[m] << endl;
+
+		// sum after exp
+		caffe_gpu_gemv<float>(CblasTrans, channels, spatial_dim, 1.,
+			top_data + i * dim, sum_multiplier_.cpu_data(), 0., scale_data);
+
+		if(debug_info_) for(int m = 0;m < 10; m++) cout << bottom_data[m] << " " << scale_data[m] <<" " << top_data[m] << endl;
+
+		// division
+		for (int j = 0; j < channels; j++) {
+			caffe_div(spatial_dim, top_data + top[0]->offset(i, j), scale_data,
+				top_data + top[0]->offset(i, j));
+		}
+	}
+	return top;
+
 }
 
 int main(int argc, char** argv)
@@ -394,7 +353,7 @@ int main(int argc, char** argv)
 
 	const vector<Blob<float>*>& result_bk = caffe_test_net.Forward(input_vec, &loss);
 
-	Blob<float> *out_blob= do_softmax(result_bk[2])[0];
+	Blob<float> *out_blob= do_gpu_softmax(result_bk[2])[0];
 	Blob<float> *cls_score = result_bk[0];
 
 	vector<Mat> score_map;
@@ -430,7 +389,7 @@ int main(int argc, char** argv)
 			input_vec.push_back(&labels);
 			float loss_;
 			const vector<Blob<float>*>& cnn_output = caffe_test_net.Forward(input_vec, &loss_);
-			Blob<float> *softmax_score = do_softmax(cnn_output[2])[0];
+			Blob<float> *softmax_score = do_gpu_softmax(cnn_output[2])[0];
 
 			int ind = 0;
 			for(int i = 0; i < softmax_score->height(); i++){
