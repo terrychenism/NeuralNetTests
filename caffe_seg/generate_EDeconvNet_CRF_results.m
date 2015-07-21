@@ -47,7 +47,7 @@ fprintf('start generating result\n');
     tic;
     
     % read image
-    I=imread('000012.jpg');
+    I=imread('000164.jpg');
     
     result_base = uint8(zeros(size(I,1), size(I,2)));
     prob_base = zeros(size(I,1),size(I,2),21);
@@ -187,14 +187,19 @@ end
 function showbbox(I, resulting_seg)
 %% show bbox for raw image
 s = regionprops(resulting_seg, 'Area', 'BoundingBox');
+% umb = graythresh(resulting_seg);
+% bw = im2bw(resulting_seg, umb);
+% [L, NE] = bwlabel(bw);
+% s = regionprops(L,'basic');
 numObj = numel(s);
-index = 1;
+index = 0;
 imshow(I);
-for k = 1: numObj-1
-    if s(k+1).Area > s(index).Area
-        index = k+1;
+for k = 1: numObj
+    if s(k).Area > 200  %s(index).Area
+        %rectangle('Position',s(k).BoundingBox,'LineWidth',3,'EdgeColor','r');
+        index = k;
     end
-    if index ~= 1
+    if index ~= 0
         rectangle('Position',s(index).BoundingBox,'LineWidth',3,'EdgeColor','r');
     end
 end
