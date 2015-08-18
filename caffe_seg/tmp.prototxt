@@ -1,7 +1,7 @@
-name: "GoogleNet"
+name: "WeatherCaffeNet"
 layer {
   name: "data"
-  type: "WindowData"
+  type: "Data"
   top: "data"
   top: "label"
   include {
@@ -10,43 +10,33 @@ layer {
   transform_param {
     mirror: true
     crop_size: 224
-    mean_value: 103.939
-    mean_value: 116.779
-    mean_value: 123.680
+    mean_value: 104
+    mean_value: 117
+    mean_value: 123
   }
-  window_data_param {
-    source: "G:/caffe-prelu/examples/finetune_pascal_detection/caffe_windows/window_file_voc_2012_train.txt"
-    batch_size: 96
-    fg_threshold: 0.5
-    bg_threshold: 0.5
-    fg_fraction: 0.25
-    context_pad: 16
-    crop_mode: "warp"
+  data_param {
+    source: "../Output/data/leveldb/train_leveldb_256x256"
+    batch_size: 32
   }
 }
 layer {
   name: "data"
-  type: "WindowData"
+  type: "Data"
   top: "data"
   top: "label"
   include {
     phase: TEST
   }
   transform_param {
-    mirror: true
+    mirror: false
     crop_size: 224
-    mean_value: 103.939
-    mean_value: 116.779
-    mean_value: 123.680
+    mean_value: 104
+    mean_value: 117
+    mean_value: 123
   }
-  window_data_param {
-    source: "G:/caffe-prelu/examples/finetune_pascal_detection/caffe_windows/window_file_voc_2012_test.txt"
-    batch_size: 96
-    fg_threshold: 0.5
-    bg_threshold: 0.5
-    fg_fraction: 0.25
-    context_pad: 16
-    crop_mode: "warp"
+  data_param {
+    source: "../Output/data/leveldb/val_leveldb_256x256"
+    batch_size: 32
   }
 }
 layer {
