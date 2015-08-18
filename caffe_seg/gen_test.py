@@ -38,3 +38,14 @@ for item in img_lst:
 
 
 
+
+==========================================
+image_path = 'C:\Users\cht2pal\Downloads\weather_database/sunny/';
+image_list = dir(strcat(image_path,'*.jpg'));
+save_path = 'C:\Users\cht2pal\Downloads\weather_database/sunny_aug/';
+for i = 1:size(image_list)
+    image_name = strcat(image_path,image_list(i).name);
+    im = imread(image_name);
+    im = imresize(im,[256 256]);
+    imwrite(im, strcat(save_path, image_list(i).name));
+end
