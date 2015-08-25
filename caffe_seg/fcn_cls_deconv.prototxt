@@ -438,14 +438,14 @@ layers {
 
 # fc6-deconv
 layers { bottom: 'fc7' top: 'fc6-deconv' name: 'fc6-deconv' type: DECONVOLUTION
-  blobs_lr: 1 blobs_lr: 2 weight_decay: 1 weight_decay: 0
+  blobs_lr: 10 blobs_lr: 20 weight_decay: 1 weight_decay: 0
   convolution_param { num_output: 512 kernel_size: 7  pad: 3
     weight_filler {      type: "gaussian"      std: 0.01    }
     bias_filler {      type: "constant"      value: 0    }} }
-layers { bottom: 'fc6-deconv' top: 'fc6-deconv' name: 'fc6-deconv-bn' type: BN
-  bn_param { scale_filler { type: 'constant' value: 1 }
-             shift_filler { type: 'constant' value: 0.001 }
-             bn_mode: INFERENCE } }
+# layers { bottom: 'fc6-deconv' top: 'fc6-deconv' name: 'fc6-deconv-bn' type: BN
+#   bn_param { scale_filler { type: 'constant' value: 1 }
+#              shift_filler { type: 'constant' value: 0.001 }
+#              bn_mode: INFERENCE } }
 layers { bottom: 'fc6-deconv' top: 'fc6-deconv' name: 'fc6-deconv-relu' type: RELU }
 
 
@@ -455,31 +455,41 @@ layers { type: UNPOOLING  bottom: "fc6-deconv"  bottom: "pool5_mask"  top: "unpo
   unpooling_param {   unpool: MAX   kernel_size: 2    stride: 2   unpool_size: 7 }
 }
 
+#======= 1 ========
+# layers {
+#   name: "fusion"
+#   type: CONCAT
+#   bottom: "unpool5"
+#   bottom: "pool5"
+#   top: "fusion"
+# }
 
-layers {
-  name: "fusion"
-  type: CONCAT
-  bottom: "unpool5"
-  bottom: "pool5"
-  top: "fusion"
-}
-
+# layers {
+#   name: "select"
+#   type: CONVOLUTION
+#   bottom: "fusion"
+#   top: "select"
+#   blobs_lr: 10
+#   blobs_lr: 20
+#   weight_decay: 1
+#   weight_decay: 0
+#   convolution_param {
+#     num_output: 256
+#     kernel_size: 1
+#     #engine: CAFFE
+#   }
+# }
+#======= 2 ========
 layers {
   name: "select"
-  type: CONVOLUTION
-  bottom: "fusion"
+  type: ELTWISE
+  bottom: "unpool5"
+  bottom: "pool5"
   top: "select"
-  blobs_lr: 1
-  blobs_lr: 2
-  weight_decay: 1
-  weight_decay: 0
-  convolution_param {
-    num_output: 256
-    kernel_size: 1
-    #engine: CAFFE
+  eltwise_param {
+    operation: PROD
   }
 }
-
 layers {
   name: "fc6-cls"
   type: INNER_PRODUCT
