@@ -2,12 +2,9 @@
 from data import ilsvrc12_iterator
 import mxnet as mx
 import logging
-workspace_default = 1024
 
 def get_vgg16_symbol():
     data = mx.symbol.Variable(name="data")
-
-
     conv1 = mx.symbol.Convolution(name='conv1', data=data , num_filter=64, pad=(3,3), kernel=(7,7), stride=(2,2), no_bias=False)
     relu1 = mx.symbol.Activation(name='relu1', data=conv1 , act_type='relu')
     pool1 = mx.symbol.Pooling(name='pool1', data=relu1 , pad=(0,0), kernel=(2,2), stride=(2,2), pool_type='max')
@@ -50,8 +47,7 @@ def get_vgg16_symbol():
     return softmax
 
 softmax = get_vgg16_symbol()  
-#softmax.save('model.json')
-#print type(softmax)
+
 ## data
 batch_size = 64
 train, val = ilsvrc12_iterator(batch_size=batch_size, input_shape=(3,224,224))
