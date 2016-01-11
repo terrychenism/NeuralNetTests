@@ -16,7 +16,7 @@ def parse_args():
                         help='Output train_val.prototxt file')
     parser.add_argument('-l', '--layer_number', nargs='*',type=int,
                         help=('Layer number for each layer stage.'),
-                        default=[3, 8, 36, 3])
+                        default=[3, 4, 6, 3])
     parser.add_argument('-t', '--type', type=int,
                         help=('0 for deploy.prototxt, 1 for train_val.prototxt.'),
                         default=1)
