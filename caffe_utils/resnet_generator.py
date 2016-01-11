@@ -14,7 +14,7 @@ def parse_args():
                         help='Output solver.prototxt file')
     parser.add_argument('train_val_file',
                         help='Output train_val.prototxt file')
-    parser.add_argument('--layer_number', nargs='*',
+    parser.add_argument('-l', '--layer_number', nargs='*',type=int,
                         help=('Layer number for each layer stage.'),
                         default=[3, 8, 36, 3])
     parser.add_argument('-t', '--type', type=int,
@@ -346,11 +346,15 @@ max_iter: 600000
 momentum: 0.9
 weight_decay: 0.0001
 snapshot: 6000
-snapshot_prefix: "resnet152"
+snapshot_prefix: "resnet"
 solver_mode: GPU'''%(train_val_name)
     return solver_str
 
 def main():
+  
+  '''
+  python ResNet_Generator.py -t 1 solver.prototxt train_val.prototxt -l 3 4 23 3
+  '''
     args = parse_args()
     solver_str = generate_solver(args.train_val_file)
     network_str = generate_train_val()
