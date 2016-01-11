@@ -304,7 +304,6 @@ def generate_train_val():
     network_str += generate_conv_layer(3, 512, 1, 1, 'conv5_1_2', 'conv5_1_1_bn', 'conv5_1_2')
     network_str += generate_bn_layer('conv5_1_2_bn', 'conv5_1_2', 'conv5_1_2_bn')
     network_str += generate_activation_layer('conv5_1_2_relu', 'conv5_1_2_bn', 'conv5_1_2_bn', 'ReLU')
-    # network_str += generate_conv_layer(1, 2048, 1, 0, 'conv5_1_3', 'conv5_1_2_bn', 'conv5_1_3')
     network_str += generate_eltwise_layer('conv5_1_sum', last_output, 'conv5_1_2_bn', 'conv5_1_sum', 'SUM')
     network_str += generate_bn_layer('conv5_1_sum_bn', 'conv5_1_sum', 'conv5_1_sum_bn')
     network_str += generate_activation_layer('conv5_1_sum_relu', 'conv5_1_sum_bn', 'conv5_1_sum_bn', 'ReLU')
