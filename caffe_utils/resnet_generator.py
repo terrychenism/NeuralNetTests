@@ -352,9 +352,9 @@ solver_mode: GPU'''%(train_val_name)
 
 def main():
   
-  '''
-  python ResNet_Generator.py -t 1 solver.prototxt train_val.prototxt -l 3 4 23 3
-  '''
+    """
+    python ResNet_Generator.py -t 1 solver.prototxt train_val.prototxt -l 3 4 6 3
+    """
     args = parse_args()
     solver_str = generate_solver(args.train_val_file)
     network_str = generate_train_val()
@@ -367,3 +367,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+    
