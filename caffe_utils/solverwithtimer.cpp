@@ -263,11 +263,10 @@ void Solver<Dtype>::Step(int iters) {
           LOG_IF(INFO, Caffe::root_solver()) << "    Train net output #"
               << score_index++ << ": " << output_name << " = "
               << result_vec[k] << loss_msg_stream.str();
-
-		  LOG_IF(INFO, Caffe::root_solver()) << "    Average iteration time: " << (iter_time / param_.display()) / 1000 << " ms";
-		  iter_time = 0;
         }
       }
+      LOG_IF(INFO, Caffe::root_solver()) << "    Average iteration time: " << (iter_time / param_.display()) / 1000 << " ms";
+      iter_time = 0;
     }
     for (int i = 0; i < callbacks_.size(); ++i) {
       callbacks_[i]->on_gradients_ready();
