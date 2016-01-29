@@ -71,129 +71,138 @@ std::vector<Datum> readDataBinary(const char* file_name)
 	return prod;
 }
 
-
+#ifndef WRITE
 int main(int argc, char** argv) {
 #ifdef USE_OPENCV
-  //::google::InitGoogleLogging(argv[0]);
-  // Print output to stderr (while still logging)
-  FLAGS_alsologtostderr = 1;
+	//::google::InitGoogleLogging(argv[0]);
+	// Print output to stderr (while still logging)
+	FLAGS_alsologtostderr = 1;
 
 #ifndef GFLAGS_GFLAGS_H_
-  namespace gflags = google;
+	namespace gflags = google;
 #endif
 
-  gflags::SetUsageMessage("Convert a set of images to the leveldb/lmdb\n"
-        "format used as input for Caffe.\n"
-        "Usage:\n"
-        "    convert_imageset [FLAGS] ROOTFOLDER/ LISTFILE DB_NAME\n"
-        "The ImageNet dataset for the training demo is at\n"
-        "    http://www.image-net.org/download-images\n");
-  caffe::GlobalInit(&argc, &argv);
+	gflags::SetUsageMessage("Convert a set of images to the leveldb/lmdb\n"
+		"format used as input for Caffe.\n"
+		"Usage:\n"
+		"    convert_imageset [FLAGS] ROOTFOLDER/ LISTFILE DB_NAME\n"
+		"The ImageNet dataset for the training demo is at\n"
+		"    http://www.image-net.org/download-images\n");
+	caffe::GlobalInit(&argc, &argv);
 
-  if (argc < 4) {
-    gflags::ShowUsageWithFlagsRestrict(argv[0], "tools/convert_imageset");
-    return 1;
-  }
-
-  const bool is_color = !FLAGS_gray;
-  const bool check_size = FLAGS_check_size;
-  const bool encoded = FLAGS_encoded;
-  const string encode_type = FLAGS_encode_type;
-
-  std::ifstream infile(argv[2]);
-  std::vector<std::pair<std::string, int> > lines;
-  std::string filename;
-  int label;
-  while (infile >> filename >> label) {
-    lines.push_back(std::make_pair(filename, label));
-  }
-  if (FLAGS_shuffle) {
-    // randomly shuffle data
-    LOG(INFO) << "Shuffling data";
-    shuffle(lines.begin(), lines.end());
-  }
-  LOG(INFO) << "A total of " << lines.size() << " images.";
-
-  if (encode_type.size() && !encoded)
-    LOG(INFO) << "encode_type specified, assuming encoded=true.";
-
-  int resize_height = std::max<int>(0, FLAGS_resize_height);
-  int resize_width = std::max<int>(0, FLAGS_resize_width);
-
-
-  // Storing to db
-  std::string root_folder(argv[1]);
-  Datum datum;
-  int count = 0;
-  const int kMaxKeyLength = 256;
-  char key_cstr[kMaxKeyLength];
-  int data_size = 0;
-  bool data_size_initialized = false;
-  vector<Datum> vecDatum;
-
-  for (int line_id = 0; line_id < lines.size(); ++line_id) {
-    bool status;
-    std::string enc = encode_type;
-    if (encoded && !enc.size()) {
-      // Guess the encoding type from the file name
-      string fn = lines[line_id].first;
-      size_t p = fn.rfind('.');
-      if ( p == fn.npos )
-        LOG(WARNING) << "Failed to guess the encoding of '" << fn << "'";
-      enc = fn.substr(p);
-      std::transform(enc.begin(), enc.end(), enc.begin(), ::tolower);
-    }
-
-	cv::Mat cv_img_origin = cv::imread(root_folder + lines[line_id].first, 1);
-	if (cv_img_origin.cols < cv_img_origin.rows){
-		resize_width = std::max<int>(0, FLAGS_resize_width);
-		resize_height = resize_width * cv_img_origin.rows / cv_img_origin.cols;
+	if (argc < 4) {
+		gflags::ShowUsageWithFlagsRestrict(argv[0], "tools/convert_imageset");
+		return 1;
 	}
-	else{
-		resize_height = std::max<int>(0, FLAGS_resize_height);
-		resize_width = resize_height * cv_img_origin.cols / cv_img_origin.rows;
+
+	const bool is_color = !FLAGS_gray;
+	const bool check_size = FLAGS_check_size;
+	const bool encoded = FLAGS_encoded;
+	const string encode_type = FLAGS_encode_type;
+
+	std::ifstream infile(argv[2]);
+	std::vector<std::pair<std::string, int> > lines;
+	std::string filename;
+	int label;
+	while (infile >> filename >> label) {
+		lines.push_back(std::make_pair(filename, label));
 	}
-	// cv::Mat cv_img;
-	// cv::resize(cv_img_origin, cv_img, cv::Size(resize_width, resize_height));
-	// cv::imshow("raw", cv_img_origin);
-	// cv::imshow("resized", cv_img);
-	// cv::waitKey();
-	//LOG(INFO) << "new width " << resize_width << " new height "<<resize_height;
-    status = ReadImageToDatum(root_folder + lines[line_id].first,
-        lines[line_id].second, resize_height, resize_width, is_color,
-        enc, &datum);
-    if (status == false) continue;
-    if (check_size) {
-      if (!data_size_initialized) {
-        data_size = datum.channels() * datum.height() * datum.width();
-        data_size_initialized = true;
-      } else {
-        const std::string& data = datum.data();
-        CHECK_EQ(data.size(), data_size) << "Incorrect data field size "
-            << data.size();
-      }
-    }
-    // sequential
-    int length = sprintf_s(key_cstr, kMaxKeyLength, "%08d_%s", line_id,
-        lines[line_id].first.c_str());
+	if (FLAGS_shuffle) {
+		// randomly shuffle data
+		LOG(INFO) << "Shuffling data";
+		shuffle(lines.begin(), lines.end());
+	}
+	LOG(INFO) << "A total of " << lines.size() << " images.";
 
-    // Put in db
-	vecDatum.push_back(datum);
+	if (encode_type.size() && !encoded)
+		LOG(INFO) << "encode_type specified, assuming encoded=true.";
 
-    if (++count % 1000 == 0) {
-      // Commit db
-      LOG(INFO) << "Processed " << count << " files.";
-    }
-  }
-  // write the last batch
-  if (count % 1000 != 0) {
-    LOG(INFO) << "Processed " << count << " files.";
-  }
+	int resize_height = std::max<int>(0, FLAGS_resize_height);
+	int resize_width = std::max<int>(0, FLAGS_resize_width);
 
-  fileWriteBin("train.bin", vecDatum);
-  
+	// Create new DB
+	//scoped_ptr<db::DB> db(db::GetDB(FLAGS_backend));
+	//db->Open(argv[3], db::NEW);
+	//scoped_ptr<db::Transaction> txn(db->NewTransaction());
+
+	// Storing to db
+	std::string root_folder(argv[1]);
+	Datum datum;
+	int count = 0;
+	const int kMaxKeyLength = 256;
+	char key_cstr[kMaxKeyLength];
+	int data_size = 0;
+	bool data_size_initialized = false;
+	vector<Datum> vecDatum;
+
+	for (int line_id = 0; line_id < lines.size(); ++line_id) {
+		bool status;
+		std::string enc = encode_type;
+		if (encoded && !enc.size()) {
+			// Guess the encoding type from the file name
+			string fn = lines[line_id].first;
+			size_t p = fn.rfind('.');
+			if (p == fn.npos)
+				LOG(WARNING) << "Failed to guess the encoding of '" << fn << "'";
+			enc = fn.substr(p);
+			std::transform(enc.begin(), enc.end(), enc.begin(), ::tolower);
+		}
+		status = ReadImageToDatum(root_folder + lines[line_id].first,
+			lines[line_id].second, resize_height, resize_width, is_color,
+			enc, &datum);
+		if (status == false) continue;
+		if (check_size) {
+			if (!data_size_initialized) {
+				data_size = datum.channels() * datum.height() * datum.width();
+				data_size_initialized = true;
+			}
+			else {
+				const std::string& data = datum.data();
+				CHECK_EQ(data.size(), data_size) << "Incorrect data field size "
+					<< data.size();
+			}
+		}
+		// sequential
+		int length = sprintf_s(key_cstr, kMaxKeyLength, "%08d_%s", line_id,
+			lines[line_id].first.c_str());
+
+		// Put in db
+		vecDatum.push_back(datum);
+		//string out;
+		//CHECK(datum.SerializeToString(&out));
+		//txn->Put(string(key_cstr, length), out);
+
+		if (++count % 1000 == 0) {
+			// Commit db
+			//txn->Commit();
+			//txn.reset(db->NewTransaction());
+			LOG(INFO) << "Processed " << count << " files.";
+		}
+	}
+	// write the last batch
+	if (count % 1000 != 0) {
+		//txn->Commit();
+		LOG(INFO) << "Processed " << count << " files.";
+	}
+	fileWriteBin("train.bin", vecDatum);
 #else
-  LOG(FATAL) << "This tool requires OpenCV; compile with USE_OPENCV.";
+	LOG(FATAL) << "This tool requires OpenCV; compile with USE_OPENCV.";
 #endif  // USE_OPENCV
-  return 0;
+	return 0;
 }
+
+
+#else
+int main(){
+	std::vector<Datum> vecDatum = readDataBinary("train.bin");
+	for (int i = 0; i < vecDatum.size(); i++){
+		Datum datum = vecDatum[0];
+		cv::Mat cv_img = DecodeDatumToCVMat(datum, true);
+		cv::resize(cv_img, cv_img, cv::Size(256, 256), 0, 0, cv::INTER_CUBIC);
+		cv::imshow("Image", cv_img);
+		cv::waitKey(200);
+	}
+
+}
+
+#endif
