@@ -53,8 +53,8 @@ M =np.matrix(M)
 
 #Row_size: is the total number of the rows of the normalized image
 #Col_size: is the total number of the columns of the normalized image
-Row_size=512
-Col_size=314
+Row_size=150
+Col_size=120
 
 
 Row_ori=512
@@ -169,10 +169,10 @@ new_face =Affain_trans(old_face,h)
 for i in range(5):
     cv2.circle(old_face, (int(landmark[i,0]), int(landmark[i,1])), 2, (0,255,0), -1)
 
-# cv2.imwrite(os.path.join(out_path,img_name+img_fmt),new_face)
+cv2.imwrite("new_face.jpg",new_face)
 # print root
 cv2.imshow("sadsds", new_face)
-cv2.waitKey()
+cv2.waitKey(2000)
         
 
 
