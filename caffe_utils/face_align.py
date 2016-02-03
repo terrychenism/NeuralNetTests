@@ -17,6 +17,10 @@ Author: Tairui Chen
 import numpy as np
 import os
 import pickle
+
+cv_root = 'F:/Program Files/OpenCV248/opencv/build/python/2.7/x64/'  # this file is expected to be in {caffe_root}/examples
+import sys
+sys.path.insert(0, cv_root)
 import cv2
 
 #the matrix of the normalized coordinates [y',x'] of the landmarks 
@@ -61,12 +65,12 @@ Row_ori=512
 Col_ori=314
 
 #dir_path: the path of the folder containing the image 
-dir_path='C:/Users/Terry/Desktop'
+dir_path='./'
 #the image format in the database
 img_fmt='.jpg'
 
 #dest_dir: the path of the folder saving the normalized image
-dest_dir='C:/Users/Terry/Desktop/'
+dest_dir='./'
 
 
 landmark = np.matrix([[ 124.41716316,  197.3844431 ],
@@ -77,7 +81,7 @@ landmark = np.matrix([[ 124.41716316,  197.3844431 ],
 
 
 
-def Affain_trans(old_face,h,Row_size=150,Col_size=120):
+def Affain_trans(old_face,old_rgb, h,Row_size=150,Col_size=120):
     '''
     return the new_face Mat by the affain transformation
     old_face: the old_face Mat
@@ -125,9 +129,11 @@ def Affain_trans(old_face,h,Row_size=150,Col_size=120):
                 w1 = (1-tx)*(1-ty)
                 w2 = tx*(1-ty)
                 w3 = (1-tx)*ty
-                w4 = tx*ty            
-                new_face[y][x]=np.uint8(w1*old_face[fy][fx]+w2*old_face[fy][cx]+\
-                                w3*old_face[cy][fx]+w4*old_face[cy][cx])
+                w4 = tx*ty
+                new_face = old_rgb      
+                for i in range(3):    
+                    new_face[y][x][i]=np.uint8(w1*old_rgb[fy][fx][i]+w2*old_rgb[fy][cx][i]+\
+                                    w3*old_rgb[cy][fx][i]+w4*old_rgb[cy][cx][i])
             
             
             
@@ -163,8 +169,8 @@ h=np.linalg.inv(M_T*M)*M_T*xy.T
 # new face based on the affain transformation
 img_name="025"
 old_face=cv2.imread(os.path.join(dir_path, img_name+img_fmt))
-old_face=cv2.cvtColor(old_face,cv2.COLOR_BGR2GRAY)
-new_face =Affain_trans(old_face,h)
+old_face_gray=cv2.cvtColor(old_face,cv2.COLOR_BGR2GRAY)
+new_face =Affain_trans(old_face_gray, old_face,h)
 
 for i in range(5):
     cv2.circle(old_face, (int(landmark[i,0]), int(landmark[i,1])), 2, (0,255,0), -1)
@@ -173,9 +179,3 @@ cv2.imwrite("new_face.jpg",new_face)
 # print root
 cv2.imshow("sadsds", new_face)
 cv2.waitKey(2000)
-        
-
-
-
-    
-
