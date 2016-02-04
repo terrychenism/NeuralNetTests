@@ -18,9 +18,6 @@ import numpy as np
 import os
 import pickle
 
-cv_root = 'F:/Program Files/OpenCV248/opencv/build/python/2.7/x64/'  # this file is expected to be in {caffe_root}/examples
-import sys
-sys.path.insert(0, cv_root)
 import cv2
 
 #the matrix of the normalized coordinates [y',x'] of the landmarks 
@@ -87,7 +84,7 @@ def Affain_trans(old_face,old_rgb, h,Row_size=150,Col_size=120):
     old_face: the old_face Mat
     h: the coeffients of the affain transformation
     '''
-    new_face=np.zeros((Row_size,Col_size),np.uint8)
+    new_face=np.zeros((Row_size,Col_size,3),np.uint8)
     for y in range(Row_size):
         for x in range(Col_size):
             #xynew=[y,x]
@@ -112,11 +109,13 @@ def Affain_trans(old_face,old_rgb, h,Row_size=150,Col_size=120):
             #check the interpolation needed or not
             if (abs(xynew[1]-rx)<1e-06) and (abs(xynew[0]-ry)<1e-6):
                 #interpolation is not needed
-                new_face[y][x]=old_face[ry][rx]
+                for i in range(3): 
+                    new_face[y][x][i]=old_rgb[ry][rx][i]
 
             elif fy<0 or fx<0 or cy>=Row_ori or cx>=Col_ori:
                 #or fx<0 or fy<0 or cy>Row_ori or cx>Col_ori:
-                new_face[y][x]=0
+                for i in range(3): 
+                    new_face[y][x][i]=0
                 
             else:
                     
@@ -130,7 +129,8 @@ def Affain_trans(old_face,old_rgb, h,Row_size=150,Col_size=120):
                 w2 = tx*(1-ty)
                 w3 = (1-tx)*ty
                 w4 = tx*ty
-                new_face = old_rgb      
+                # tmp = old_rgb
+                # new_face = cv2.resize(tmp,(Col_size,Row_size))#np.zeros((Row_size,Col_size,3),np.uint8)   
                 for i in range(3):    
                     new_face[y][x][i]=np.uint8(w1*old_rgb[fy][fx][i]+w2*old_rgb[fy][cx][i]+\
                                     w3*old_rgb[cy][fx][i]+w4*old_rgb[cy][cx][i])
