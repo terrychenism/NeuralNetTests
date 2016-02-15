@@ -44,17 +44,20 @@ def addLoss(bottom, top, weight):
     f.write('  type: "SoftmaxWithLoss"\n');
     f.write('  loss_weight: {}\n'.format(weight));
     f.write('}\n');
+    return
+
+def addAcc(bottom, top):
+    # f.write('layer {\n');
+    # f.write('  bottom: "{}"\n'.format(bottom));
+    # f.write('  top: "{}/prob"\n'.format(top));
+    # f.write('  name: "{}/prob"\n'.format(top));
+    # f.write('  type: "Softmax"\n');
+    # f.write('  include {\n');
+    # f.write('    phase: TEST\n');
+    # f.write('  }\n');
+    # f.write('}\n');
     f.write('layer {\n');
     f.write('  bottom: "{}"\n'.format(bottom));
-    f.write('  top: "{}/prob"\n'.format(top));
-    f.write('  name: "{}/prob"\n'.format(top));
-    f.write('  type: "Softmax"\n');
-    f.write('  include {\n');
-    f.write('    phase: TEST\n');
-    f.write('  }\n');
-    f.write('}\n');
-    f.write('layer {\n');
-    f.write('  bottom: "{}/prob"\n'.format(top));
     f.write('  bottom: "label"\n');
     f.write('  top: "{}/top-1"\n'.format(top));
     f.write('  name: "{}/top-1"\n'.format(top));
@@ -64,7 +67,7 @@ def addLoss(bottom, top, weight):
     f.write('  }\n');
     f.write('}\n');
     f.write('layer {\n');
-    f.write('  bottom: "{}/prob"\n'.format(top));
+    f.write('  bottom: "{}"\n'.format(bottom));
     f.write('  bottom: "label"\n');
     f.write('  top: "{}/top-5"\n'.format(top));
     f.write('  name: "{}/top-5"\n'.format(top));
@@ -76,7 +79,6 @@ def addLoss(bottom, top, weight):
     f.write('    phase: TEST\n');
     f.write('  }\n');
     f.write('}\n');
-    return
 
 def addReLU(bottom):
    #bottom = 'inception_5b/pool_proj/bn'
@@ -400,7 +402,7 @@ conv_2=Conv(data=conv_1, num_filter=64, kernel=3, pad=1,name='conv_2')
 pool=addPooling(bottom=conv_2, top='pool', kernel=3, stride=2, pad=0, pool='MAX')
 
 # stage 2
-conv_3=Conv(data=pool, num_filter=80, kernel=1, pad=1, name='conv_3') #299 pad:0
+conv_3=Conv(data=pool, num_filter=80, kernel=1, pad=0, name='conv_3') #224 pad:1
 conv_4=Conv(data=conv_3, num_filter=192, kernel=3, name='conv_4')
 pool1=addPooling(bottom=conv_4, top='poo11', kernel=3, stride=2, pad=0, pool='MAX')
 
@@ -439,6 +441,12 @@ in4d = Inception7C(in4c, 192,
                    192, 192, 192,
                    192, 192, 192, 192, 192,
                    "avg", 192, "mixed_7")
+#helper classifier
+head=addPooling(bottom=in4d, top="global_pool_1", kernel=5, stride=3, pad=0, pool='AVE')#299 kernel=5
+head=Conv(data=head, num_filter=128,name='conv_cls')
+head=addClassifier(bottom=head, top='fc999', num_output=1000)
+addLoss(bottom=head, top='loss_1', weight=0.4)
+
 in4e = Inception7D(in4d, 192, 320,
                    192, 192, 192, 192,
                    "max", "mixed_8")
@@ -455,8 +463,9 @@ in5b = Inception7E(in5a, 320,
 
 
 # main classifier
-pool=addPooling(bottom=in5b, top="global_pool", kernel=6, stride=1, pad=0, pool='AVE')#299 kernel=7
-fc1000=addClassifier(bottom=pool, top='fc1000', num_output=1000)
-addLoss(bottom=fc1000, top='loss', weight=1)
+global_pool_2=addPooling(bottom=in5b, top="global_pool_2", kernel=8, stride=1, pad=0, pool='AVE')#224 kernel=6
+fc1000=addClassifier(bottom=global_pool_2, top='fc1000', num_output=1000)
+addLoss(bottom=fc1000, top='loss_2', weight=1)
+addAcc(bottom=fc1000, top="accuracy")
 
 
