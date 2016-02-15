@@ -90,6 +90,19 @@ def addReLU(bottom):
    f.write('}\n');
    return bottom 
 
+def addDropout(bottom,dropout_ratio):
+   #bottom = 'inception_5b/pool_proj/bn'
+   f.write('layer {\n');
+   f.write('  bottom: "{}"\n'.format(bottom));
+   f.write('  top: "{}"\n'.format(bottom));
+   f.write('  name: "{}/Drop"\n'.format(bottom));
+   f.write('  type: "Dropout"\n');
+   f.write('  dropout_param {\n');
+   f.write('    dropout_ratio: {}\n'.format(dropout_ratio));
+   f.write('  }\n');
+   f.write('}\n');
+   return bottom 
+
 def addPooling(bottom, top, kernel, stride=1, pad=0, pool='MAX'):
    #bottom = 'conv1/7x7_s2/sc' 
    #top = 'pool1/3x3_s2'
@@ -441,11 +454,13 @@ in4d = Inception7C(in4c, 192,
                    192, 192, 192,
                    192, 192, 192, 192, 192,
                    "avg", 192, "mixed_7")
+
 #helper classifier
-head=addPooling(bottom=in4d, top="global_pool_1", kernel=5, stride=3, pad=0, pool='AVE')#299 kernel=5
-head=Conv(data=head, num_filter=128,name='conv_cls')
+head=addPooling(bottom=in4d, top="global_pool_1", kernel=5, stride=3, pad=0, pool='AVE')
+head=Conv(data=head, num_filter=128, name='conv_cls')
 head=addClassifier(bottom=head, top='fc999', num_output=1000)
 addLoss(bottom=head, top='loss_1', weight=0.4)
+addAcc(bottom=head, top="accuracy_1")
 
 in4e = Inception7D(in4d, 192, 320,
                    192, 192, 192, 192,
@@ -463,9 +478,10 @@ in5b = Inception7E(in5a, 320,
 
 
 # main classifier
-global_pool_2=addPooling(bottom=in5b, top="global_pool_2", kernel=8, stride=1, pad=0, pool='AVE')#224 kernel=6
-fc1000=addClassifier(bottom=global_pool_2, top='fc1000', num_output=1000)
-addLoss(bottom=fc1000, top='loss_2', weight=1)
-addAcc(bottom=fc1000, top="accuracy")
+cls=addPooling(bottom=in5b, top="global_pool_2", kernel=8, stride=1, pad=0, pool='AVE')#224 kernel=6
+cls=addDropout(bottom=cls,dropout_ratio=0.2)
+cls=addClassifier(bottom=cls, top='fc1000', num_output=1000)
+addLoss(bottom=cls, top='loss_2', weight=1)
+addAcc(bottom=cls, top="accuracy_2")
 
 
