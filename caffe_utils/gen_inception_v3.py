@@ -1,5 +1,16 @@
-filename = 'train_val.body'
-f = open(filename, 'w')
+#!/usr/bin/env python
+
+"""
+Inception V3, suitable for images with around 299 x 299
+Reference:
+Szegedy, Christian, et al. "Rethinking the Inception Architecture for Computer Vision." arXiv preprint arXiv:1512.00567 (2015).
+
+Author: Tairui Chen
+Purpose: Generate inception v3 prototxt
+Created: 2/14/2016
+Copyright:   (c) Tairui Chen 2016
+
+"""
 
 def Conv(data, num_filter, kernel=1, stride=1, pad=0, name=None, suffix=''):
     path=addConv(bottom=data, top='%s%s' %(name, suffix), outChannels=num_filter, kernel=kernel, stride=stride, pad=pad)
@@ -407,81 +418,87 @@ def Inception7E(data,
 
 
 
+
+def get_symbol(num_classes=1000):
+
+
+    # stage 1
+    conv=Conv(data='data', num_filter=32, kernel=3, stride=2,name='conv' )
+    conv_1=Conv(data=conv, num_filter=32, kernel=3, name='conv_1')
+    conv_2=Conv(data=conv_1, num_filter=64, kernel=3, pad=1,name='conv_2')
+    pool=addPooling(bottom=conv_2, top='pool', kernel=3, stride=2, pad=0, pool='MAX')
+
+    # stage 2
+    conv_3=Conv(data=pool, num_filter=80, kernel=1, pad=0, name='conv_3') #224 pad:1
+    conv_4=Conv(data=conv_3, num_filter=192, kernel=3, name='conv_4')
+    pool1=addPooling(bottom=conv_4, top='poo11', kernel=3, stride=2, pad=0, pool='MAX')
+
+
+
+    # stage 3
+    in3a = Inception7A(pool1, 64,
+                       64, 96, 96,
+                       48, 64,
+                       "avg", 32, "mixed")
+    in3b = Inception7A(in3a, 64,
+                       64, 96, 96,
+                       48, 64,
+                       "avg", 64, "mixed_1")
+    in3c = Inception7A(in3b, 64,
+                       64, 96, 96,
+                       48, 64,
+                       "avg", 64, "mixed_2")
+    in3d = Inception7B(in3c, 384,
+                       64, 96, 96,
+                       "max", "mixed_3")
+    # stage 4
+    in4a = Inception7C(in3d, 192,
+                       128, 128, 192,
+                       128, 128, 128, 128, 192,
+                       "avg", 192, "mixed_4")
+    in4b = Inception7C(in4a, 192,
+                       160, 160, 192,
+                       160, 160, 160, 160, 192,
+                       "avg", 192, "mixed_5")
+    in4c = Inception7C(in4b, 192,
+                       160, 160, 192,
+                       160, 160, 160, 160, 192,
+                       "avg", 192, "mixed_6")
+    in4d = Inception7C(in4c, 192,
+                       192, 192, 192,
+                       192, 192, 192, 192, 192,
+                       "avg", 192, "mixed_7")
+
+    #helper classifier
+    head=addPooling(bottom=in4d, top="global_pool_1", kernel=5, stride=3, pad=0, pool='AVE')
+    head=Conv(data=head, num_filter=128, name='conv_cls')
+    head=addClassifier(bottom=head, top='fc1', num_output=num_classes)
+    addLoss(bottom=head, top='loss_1', weight=0.4)
+    addAcc(bottom=head, top="accuracy_1")
+
+    in4e = Inception7D(in4d, 192, 320,
+                       192, 192, 192, 192,
+                       "max", "mixed_8")
+    # stage 5
+    in5a = Inception7E(in4e, 320,
+                       384, 384, 384,
+                       448, 384, 384, 384,
+                       "avg", 192, "mixed_9")
+    in5b = Inception7E(in5a, 320,
+                       384, 384, 384,
+                       448, 384, 384, 384,
+                       "max", 192, "mixed_10")
+
+    # main classifier
+    cls=addPooling(bottom=in5b, top="global_pool_2", kernel=8, stride=1, pad=0, pool='AVE')#224 kernel=6
+    cls=addDropout(bottom=cls,dropout_ratio=0.2)
+    cls=addClassifier(bottom=cls, top='fc1000', num_output=num_classes)
+    addLoss(bottom=cls, top='loss_2', weight=1)
+    addAcc(bottom=cls, top="accuracy_2")
+
+
 # main
-# stage 1
-conv=Conv(data='data', num_filter=32, kernel=3, stride=2,name='conv' )
-conv_1=Conv(data=conv, num_filter=32, kernel=3, name='conv_1')
-conv_2=Conv(data=conv_1, num_filter=64, kernel=3, pad=1,name='conv_2')
-pool=addPooling(bottom=conv_2, top='pool', kernel=3, stride=2, pad=0, pool='MAX')
-
-# stage 2
-conv_3=Conv(data=pool, num_filter=80, kernel=1, pad=0, name='conv_3') #224 pad:1
-conv_4=Conv(data=conv_3, num_filter=192, kernel=3, name='conv_4')
-pool1=addPooling(bottom=conv_4, top='poo11', kernel=3, stride=2, pad=0, pool='MAX')
-
-
-
-# stage 3
-in3a = Inception7A(pool1, 64,
-                   64, 96, 96,
-                   48, 64,
-                   "avg", 32, "mixed")
-in3b = Inception7A(in3a, 64,
-                   64, 96, 96,
-                   48, 64,
-                   "avg", 64, "mixed_1")
-in3c = Inception7A(in3b, 64,
-                   64, 96, 96,
-                   48, 64,
-                   "avg", 64, "mixed_2")
-in3d = Inception7B(in3c, 384,
-                   64, 96, 96,
-                   "max", "mixed_3")
-# stage 4
-in4a = Inception7C(in3d, 192,
-                   128, 128, 192,
-                   128, 128, 128, 128, 192,
-                   "avg", 192, "mixed_4")
-in4b = Inception7C(in4a, 192,
-                   160, 160, 192,
-                   160, 160, 160, 160, 192,
-                   "avg", 192, "mixed_5")
-in4c = Inception7C(in4b, 192,
-                   160, 160, 192,
-                   160, 160, 160, 160, 192,
-                   "avg", 192, "mixed_6")
-in4d = Inception7C(in4c, 192,
-                   192, 192, 192,
-                   192, 192, 192, 192, 192,
-                   "avg", 192, "mixed_7")
-
-#helper classifier
-head=addPooling(bottom=in4d, top="global_pool_1", kernel=5, stride=3, pad=0, pool='AVE')
-head=Conv(data=head, num_filter=128, name='conv_cls')
-head=addClassifier(bottom=head, top='fc999', num_output=1000)
-addLoss(bottom=head, top='loss_1', weight=0.4)
-addAcc(bottom=head, top="accuracy_1")
-
-in4e = Inception7D(in4d, 192, 320,
-                   192, 192, 192, 192,
-                   "max", "mixed_8")
-# stage 5
-in5a = Inception7E(in4e, 320,
-                   384, 384, 384,
-                   448, 384, 384, 384,
-                   "avg", 192, "mixed_9")
-in5b = Inception7E(in5a, 320,
-                   384, 384, 384,
-                   448, 384, 384, 384,
-                   "max", 192, "mixed_10")
-
-
-
-# main classifier
-cls=addPooling(bottom=in5b, top="global_pool_2", kernel=8, stride=1, pad=0, pool='AVE')#224 kernel=6
-cls=addDropout(bottom=cls,dropout_ratio=0.2)
-cls=addClassifier(bottom=cls, top='fc1000', num_output=1000)
-addLoss(bottom=cls, top='loss_2', weight=1)
-addAcc(bottom=cls, top="accuracy_2")
-
-
+if __name__ == '__main__':
+    filename = 'train_val.body'
+    f = open(filename, 'w')
+    get_symbol(num_classes=1000)
