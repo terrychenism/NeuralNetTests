@@ -340,7 +340,7 @@ def Inception7C(data,
     tower_d7 = Conv(data=data, num_filter=num_d7_red, name=('%s_tower' % name), suffix='_conv')
     tower_d7 = Conv2(data=tower_d7, num_filter=num_d7_1, kernel_h=1, kernel_w=7, pad_h=0,pad_w=3, name=('%s_tower' % name), suffix='_conv_1')
     tower_d7 = Conv2(data=tower_d7, num_filter=num_d7_2, kernel_h=7, kernel_w=1, pad_h=3,pad_w=0, name=('%s_tower' % name), suffix='_conv_2')
-    tower_q7 = Conv2(data=data, num_filter=num_q7_red, name=('%s_tower_1' % name), suffix='_conv')
+    tower_q7 = Conv(data=data, num_filter=num_q7_red, name=('%s_tower_1' % name), suffix='_conv')
     tower_q7 = Conv2(data=tower_q7, num_filter=num_q7_1, kernel_h=7, kernel_w=1, pad_h=3,pad_w=0, name=('%s_tower_1' % name), suffix='_conv_1')
     tower_q7 = Conv2(data=tower_q7, num_filter=num_q7_2, kernel_h=1, kernel_w=7, pad_h=0,pad_w=3, name=('%s_tower_1' % name), suffix='_conv_2')
     tower_q7 = Conv2(data=tower_q7, num_filter=num_q7_3, kernel_h=7, kernel_w=1, pad_h=3,pad_w=0, name=('%s_tower_1' % name), suffix='_conv_3')
