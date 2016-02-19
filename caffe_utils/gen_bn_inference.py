@@ -75,18 +75,25 @@ def main(args):
     weights = caffe.Net(args.model, args.weights, caffe.TEST)
     for i, layer in enumerate(model.layer):
         if layer.name not in to_be_absorbed: continue
-        scale, bias, mean, var = [p.data.ravel()
+        scale_factor, bias, mean, var = [p.data.ravel()
                                      for p in weights.params[layer.name]]
+        
+        # scale_factor = 1./scale_factor
+        # print var
+        mean = mean*scale_factor
+        var = var*scale_factor
+
         eps = 1e-5
         invstd = 1./np.sqrt( var + eps )
+
         for j in xrange(i - 1, -1, -1):
             bottom_layer = model.layer[j]
             if layer.bottom[0] in bottom_layer.top:
                 W, b = weights.params[bottom_layer.name]
                 num = W.data.shape[0]
-                W.data[...] = (W.data * scale[:, None, None, None]
-                                      * invstd[:, None, None, None])
-                b.data[...] = (b.data[...] - mean) * scale * invstd + bias
+                if bottom_layer.type == 'Convolution':
+                    W.data[...] = (W.data * invstd.reshape(num,1, 1,1))
+                    b.data[...] = (b.data[...] - mean) * invstd + bias
     
 
     # Absorb the BN parameters
