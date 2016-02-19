@@ -4,7 +4,7 @@ import os
 import os.path as osp
 import google.protobuf as pb
 from argparse import ArgumentParser
-caffe_root = '/home/tairuic/Downloads/caffe_pkg/caffe/'   # this file is expected to be in {caffe_root}/examples
+caffe_root = '/caffe_root/' 
 import sys
 sys.path.insert(0, caffe_root + 'python')
 import caffe
