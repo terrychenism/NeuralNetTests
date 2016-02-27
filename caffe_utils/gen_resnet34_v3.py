@@ -20,6 +20,9 @@ def parse_args():
     parser.add_argument('-t', '--type', type=int,
                         help=('0 for deploy.prototxt, 1 for train_val.prototxt.'),
                         default=1)
+    parser.add_argument('-k', '--kernel_num', type=int,
+                        help=('kernel number'),
+                        default=64)
 
     args = parser.parse_args()
     return args
@@ -197,7 +200,7 @@ layer {
 '''%(bottom, bottom, bottom)
     return softmax_loss_str
 
-def generate_bn_layer(layer_name, bottom, top):
+def generate_bn_layer_v3(layer_name, bottom, top):
     bn_layer_str = '''layer {
   name: "%s"
   type: "BatchNorm"
@@ -232,7 +235,7 @@ layer {
 '''%(layer_name, bottom, top, layer_name, top, top)
     return bn_layer_str
     
-def generate_bn_layer_v3(layer_name, bottom, top):
+def generate_bn_layer_v1(layer_name, bottom, top):
     bn_layer_str = '''layer {
   name: "%s"
   type: "BatchNorm"
@@ -251,14 +254,18 @@ def generate_bn_layer_v3(layer_name, bottom, top):
 '''%(layer_name, bottom, top)
     return bn_layer_str
 
-def generate_bn_layer_v2(layer_name, bottom, top):
+def generate_bn_layer(layer_name, bottom, top):
     bn_layer_str = '''layer {
   name: "%s"
-  type: "BatchNorm"
+  type: "BN"
   bottom: "%s"
   top: "%s"
   param {
-    lr_mult: 0
+    lr_mult: 1
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 1
     decay_mult: 0
   }
   param {
@@ -269,9 +276,15 @@ def generate_bn_layer_v2(layer_name, bottom, top):
     lr_mult: 0
     decay_mult: 0
   }
-  batch_norm_param {
-    use_global_stats: false
-    moving_average_fraction: 0.95
+  bn_param {
+    scale_filler {
+      type: "constant"
+      value: 1
+    }
+    shift_filler {
+      type: "constant"
+      value: 0
+    }
   }
 }
 '''%(layer_name, bottom, top)
@@ -280,24 +293,25 @@ def generate_bn_layer_v2(layer_name, bottom, top):
 
 def generate_train_val():
     args = parse_args()
+    kernel_num = args.kernel_num
     network_str = generate_data_layer()
     '''before stage'''
     last_top = 'data'
-    network_str += generate_conv_layer(7, 64, 2, 3, 'conv1', last_top, 'conv1')
+    network_str += generate_conv_layer(7, kernel_num, 2, 3, 'conv1', last_top, 'conv1')
     network_str += generate_bn_layer('conv1_bn', 'conv1', 'conv1')
     network_str += generate_activation_layer('conv1_relu', 'conv1', 'conv1', 'ReLU')
     network_str += generate_pooling_layer(3, 2, 'MAX', 'pool1', 'conv1', 'pool1')
     '''stage 1'''
     last_top = 'pool1'
-    network_str += generate_conv_layer(1, 64, 1, 0, 'conv1_output', last_top, 'conv1_output')
+    network_str += generate_conv_layer(1, kernel_num, 1, 0, 'conv1_output', last_top, 'conv1_output')
     network_str += generate_bn_layer('conv1_output_bn', 'conv1_output', 'conv1_output')
     # network_str += generate_activation_layer('conv1_output_relu', 'conv1_output', 'conv1_output', 'ReLU')
     last_output = 'conv1_output'
     for l in xrange(1, args.layer_number[0]+1):
-        network_str += generate_conv_layer(3, 64, 1, 1, 'conv2_%d_1'%l, last_top, 'conv2_%d_1'%l)
+        network_str += generate_conv_layer(3, kernel_num, 1, 1, 'conv2_%d_1'%l, last_top, 'conv2_%d_1'%l)
         network_str += generate_bn_layer('conv2_%d_1_bn'%l, 'conv2_%d_1'%l, 'conv2_%d_1'%l)
         network_str += generate_activation_layer('conv2_%d_1_relu'%l, 'conv2_%d_1'%l, 'conv2_%d_1'%l, 'ReLU')
-        network_str += generate_conv_layer(3, 64, 1, 1, 'conv2_%d_2'%l, 'conv2_%d_1'%l, 'conv2_%d_2'%l)
+        network_str += generate_conv_layer(3, kernel_num, 1, 1, 'conv2_%d_2'%l, 'conv2_%d_1'%l, 'conv2_%d_2'%l)
         network_str += generate_bn_layer('conv2_%d_2_bn'%l, 'conv2_%d_2'%l, 'conv2_%d_2'%l)
         # network_str += generate_activation_layer('conv2_%d_2_relu'%l, 'conv2_%d_2_bn'%l, 'conv2_%d_2_bn'%l, 'ReLU')
         network_str += generate_eltwise_layer('conv2_%d_sum'%l, last_output, 'conv2_%d_2'%l, 'conv2_%d_sum'%l, 'SUM')
@@ -305,15 +319,16 @@ def generate_train_val():
         network_str += generate_activation_layer('conv2_%d_sum_relu'%l, 'conv2_%d_sum'%l, 'conv2_%d_sum'%l, 'ReLU')
         last_top = 'conv2_%d_sum'%l
         last_output = 'conv2_%d_sum'%l
-    network_str += generate_conv_layer(1, 128, 2, 0, 'conv2_output', last_top, 'conv2_output')
+    kernel_num *= 2
+    network_str += generate_conv_layer(1, kernel_num, 2, 0, 'conv2_output', last_top, 'conv2_output')
     network_str += generate_bn_layer('conv2_output_bn', 'conv2_output', 'conv2_output')
     # network_str += generate_activation_layer('conv2_output_relu', 'conv2_output', 'conv2_output', 'ReLU')
     last_output = 'conv2_output'
     '''stage 2'''
-    network_str += generate_conv_layer(1, 128, 2, 0, 'conv3_1_1', last_top, 'conv3_1_1')
+    network_str += generate_conv_layer(1, kernel_num, 2, 0, 'conv3_1_1', last_top, 'conv3_1_1')
     network_str += generate_bn_layer('conv3_1_1_bn', 'conv3_1_1', 'conv3_1_1')
     network_str += generate_activation_layer('conv3_1_1_relu', 'conv3_1_1', 'conv3_1_1', 'ReLU')
-    network_str += generate_conv_layer(3, 128, 1, 1, 'conv3_1_2', 'conv3_1_1', 'conv3_1_2')
+    network_str += generate_conv_layer(3, kernel_num, 1, 1, 'conv3_1_2', 'conv3_1_1', 'conv3_1_2')
     network_str += generate_bn_layer('conv3_1_2_bn', 'conv3_1_2', 'conv3_1_2')
     #network_str += generate_activation_layer('conv3_1_2_relu', 'conv3_1_2_bn', 'conv3_1_2_bn', 'ReLU')
     network_str += generate_eltwise_layer('conv3_1_sum', last_output, 'conv3_1_2', 'conv3_1_sum', 'SUM')
@@ -321,25 +336,27 @@ def generate_train_val():
     network_str += generate_activation_layer('conv3_1_sum_relu', 'conv3_1_sum', 'conv3_1_sum', 'ReLU')
     last_top = 'conv3_1_sum'
     for l in xrange(2, args.layer_number[1]+1):
-        network_str += generate_conv_layer(3, 128, 1, 1, 'conv3_%d_1'%l, last_top, 'conv3_%d_1'%l)
+        network_str += generate_conv_layer(3, kernel_num, 1, 1, 'conv3_%d_1'%l, last_top, 'conv3_%d_1'%l)
         network_str += generate_bn_layer('conv3_%d_1_bn'%l, 'conv3_%d_1'%l, 'conv3_%d_1'%l)
         network_str += generate_activation_layer('conv3_%d_1_relu'%l, 'conv3_%d_1'%l, 'conv3_%d_1'%l, 'ReLU')
-        network_str += generate_conv_layer(3, 128, 1, 1, 'conv3_%d_2'%l, 'conv3_%d_1'%l, 'conv3_%d_2'%l)
+        network_str += generate_conv_layer(3, kernel_num, 1, 1, 'conv3_%d_2'%l, 'conv3_%d_1'%l, 'conv3_%d_2'%l)
         network_str += generate_bn_layer('conv3_%d_2_bn'%l, 'conv3_%d_2'%l, 'conv3_%d_2'%l)
         #network_str += generate_activation_layer('conv3_%d_2_relu'%l, 'conv3_%d_2_bn'%l, 'conv3_%d_2_bn'%l, 'ReLU')
         network_str += generate_eltwise_layer('conv3_%d_sum'%l, last_top, 'conv3_%d_2'%l, 'conv3_%d_sum'%l, 'SUM')
         #network_str += generate_bn_layer('conv3_%d_sum_bn'%l, 'conv3_%d_sum'%l, 'conv3_%d_sum_bn'%l)
         network_str += generate_activation_layer('conv3_%d_sum_relu'%l, 'conv3_%d_sum'%l, 'conv3_%d_sum'%l, 'ReLU')
         last_top = 'conv3_%d_sum'%l
-    network_str += generate_conv_layer(1, 256, 2, 0, 'conv3_output', last_top, 'conv3_output')
+
+    kernel_num *= 2
+    network_str += generate_conv_layer(1, kernel_num, 2, 0, 'conv3_output', last_top, 'conv3_output')
     network_str += generate_bn_layer('conv3_output_bn', 'conv3_output', 'conv3_output')
     # network_str += generate_activation_layer('conv3_output_relu', 'conv3_output', 'conv3_output', 'ReLU')
     last_output = 'conv3_output'
     '''stage 3'''
-    network_str += generate_conv_layer(1, 256, 2, 0, 'conv4_1_1', last_top, 'conv4_1_1')
+    network_str += generate_conv_layer(1, kernel_num, 2, 0, 'conv4_1_1', last_top, 'conv4_1_1')
     network_str += generate_bn_layer('conv4_1_1_bn', 'conv4_1_1', 'conv4_1_1')
     network_str += generate_activation_layer('conv4_1_1_relu', 'conv4_1_1', 'conv4_1_1', 'ReLU')
-    network_str += generate_conv_layer(3, 256, 1, 1, 'conv4_1_2', 'conv4_1_1', 'conv4_1_2')
+    network_str += generate_conv_layer(3, kernel_num, 1, 1, 'conv4_1_2', 'conv4_1_1', 'conv4_1_2')
     network_str += generate_bn_layer('conv4_1_2_bn', 'conv4_1_2', 'conv4_1_2')
     #network_str += generate_activation_layer('conv4_1_2_relu', 'conv4_1_2_bn', 'conv4_1_2_bn', 'ReLU')
     network_str += generate_eltwise_layer('conv4_1_sum', last_output, 'conv4_1_2', 'conv4_1_sum', 'SUM')
@@ -347,25 +364,26 @@ def generate_train_val():
     network_str += generate_activation_layer('conv4_1_sum_relu', 'conv4_1_sum', 'conv4_1_sum', 'ReLU')
     last_top = 'conv4_1_sum'
     for l in xrange(2, args.layer_number[2]+1):
-        network_str += generate_conv_layer(3, 256, 1, 1, 'conv4_%d_1'%l, last_top, 'conv4_%d_1'%l)
+        network_str += generate_conv_layer(3, kernel_num, 1, 1, 'conv4_%d_1'%l, last_top, 'conv4_%d_1'%l)
         network_str += generate_bn_layer('conv4_%d_1_bn'%l, 'conv4_%d_1'%l, 'conv4_%d_1'%l)
         network_str += generate_activation_layer('conv4_%d_1_relu'%l, 'conv4_%d_1'%l, 'conv4_%d_1'%l, 'ReLU')
-        network_str += generate_conv_layer(3, 256, 1, 1, 'conv4_%d_2'%l, 'conv4_%d_1'%l, 'conv4_%d_2'%l)
+        network_str += generate_conv_layer(3, kernel_num, 1, 1, 'conv4_%d_2'%l, 'conv4_%d_1'%l, 'conv4_%d_2'%l)
         network_str += generate_bn_layer('conv4_%d_2_bn'%l, 'conv4_%d_2'%l, 'conv4_%d_2'%l)
         #network_str += generate_activation_layer('conv4_%d_2_relu'%l, 'conv4_%d_2_bn'%l, 'conv4_%d_2_bn'%l, 'ReLU')
         network_str += generate_eltwise_layer('conv4_%d_sum'%l, last_top, 'conv4_%d_2'%l, 'conv4_%d_sum'%l, 'SUM')
         #network_str += generate_bn_layer('conv4_%d_sum_bn'%l, 'conv4_%d_sum'%l, 'conv4_%d_sum_bn'%l)
         network_str += generate_activation_layer('conv4_%d_sum_relu'%l, 'conv4_%d_sum'%l, 'conv4_%d_sum'%l, 'ReLU')
         last_top = 'conv4_%d_sum'%l
-    network_str += generate_conv_layer(1, 512, 2, 0, 'conv4_output', last_top, 'conv4_output')
+    kernel_num *= 2
+    network_str += generate_conv_layer(1, kernel_num, 2, 0, 'conv4_output', last_top, 'conv4_output')
     network_str += generate_bn_layer('conv4_output_bn', 'conv4_output', 'conv4_output')
     # network_str += generate_activation_layer('conv4_output_relu', 'conv4_output', 'conv4_output', 'ReLU')
     last_output = 'conv4_output'
     '''stage 4'''
-    network_str += generate_conv_layer(1, 512, 2, 0, 'conv5_1_1', last_top, 'conv5_1_1')
+    network_str += generate_conv_layer(1, kernel_num, 2, 0, 'conv5_1_1', last_top, 'conv5_1_1')
     network_str += generate_bn_layer('conv5_1_1_bn', 'conv5_1_1', 'conv5_1_1')
     network_str += generate_activation_layer('conv5_1_1_relu', 'conv5_1_1', 'conv5_1_1', 'ReLU')
-    network_str += generate_conv_layer(3, 512, 1, 1, 'conv5_1_2', 'conv5_1_1', 'conv5_1_2')
+    network_str += generate_conv_layer(3, kernel_num, 1, 1, 'conv5_1_2', 'conv5_1_1', 'conv5_1_2')
     network_str += generate_bn_layer('conv5_1_2_bn', 'conv5_1_2', 'conv5_1_2')
     #network_str += generate_activation_layer('conv5_1_2_relu', 'conv5_1_2_bn', 'conv5_1_2_bn', 'ReLU')
     network_str += generate_eltwise_layer('conv5_1_sum', last_output, 'conv5_1_2', 'conv5_1_sum', 'SUM')
@@ -373,10 +391,10 @@ def generate_train_val():
     network_str += generate_activation_layer('conv5_1_sum_relu', 'conv5_1_sum', 'conv5_1_sum', 'ReLU')
     last_top = 'conv5_1_sum'
     for l in xrange(2, args.layer_number[3]+1):
-        network_str += generate_conv_layer(3, 512, 1, 1, 'conv5_%d_1'%l, last_top, 'conv5_%d_1'%l)
+        network_str += generate_conv_layer(3, kernel_num, 1, 1, 'conv5_%d_1'%l, last_top, 'conv5_%d_1'%l)
         network_str += generate_bn_layer('conv5_%d_1_bn'%l, 'conv5_%d_1'%l, 'conv5_%d_1'%l)
         network_str += generate_activation_layer('conv5_%d_1_relu'%l, 'conv5_%d_1'%l, 'conv5_%d_1'%l, 'ReLU')
-        network_str += generate_conv_layer(3, 512, 1, 1, 'conv5_%d_2'%l, 'conv5_%d_1'%l, 'conv5_%d_2'%l)
+        network_str += generate_conv_layer(3, kernel_num, 1, 1, 'conv5_%d_2'%l, 'conv5_%d_1'%l, 'conv5_%d_2'%l)
         network_str += generate_bn_layer('conv5_%d_2_bn'%l, 'conv5_%d_2'%l, 'conv5_%d_2'%l)
         #network_str += generate_activation_layer('conv5_%d_2_relu'%l, 'conv5_%d_2_bn'%l, 'conv5_%d_2_bn'%l, 'ReLU')
         network_str += generate_eltwise_layer('conv5_%d_sum'%l, last_top, 'conv5_%d_2'%l, 'conv5_%d_sum'%l, 'SUM')
