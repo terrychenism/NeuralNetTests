@@ -252,7 +252,7 @@ def generate_train_val():
     '''stage 1'''
     last_top = 'pool1'
     network_str += generate_conv_layer(1, 256, 1, 0, 'conv1_output', last_top, 'conv1_output')
-    network_str += generate_bn_layer('conv1_output_bn', 'conv1_output', 'conv1_output')
+    # network_str += generate_bn_layer('conv1_output_bn', 'conv1_output', 'conv1_output')
     last_output = 'conv1_output'
 
     network_str += generate_conv_layer(1, 64, 1, 0, 'conv2_1_1', last_top, 'conv2_1_1')
@@ -285,7 +285,7 @@ def generate_train_val():
     network_str += generate_bn_layer('conv2_%d_sum_branch1_bn'%l, last_top, 'conv2_%d_sum_branch1_bn'%l)
     network_str += generate_activation_layer('conv2_%d_sum__branch1_relu'%l, 'conv2_%d_sum_branch1_bn'%l, 'conv2_%d_sum_branch1_bn'%l, 'ReLU')
     network_str += generate_conv_layer(1, 512, 2, 0, 'conv2_output', 'conv2_%d_sum_branch1_bn'%l, 'conv2_output')
-    network_str += generate_bn_layer('conv2_output_bn', 'conv2_output', 'conv2_output')
+    # network_str += generate_bn_layer('conv2_output_bn', 'conv2_output', 'conv2_output')
     last_output = 'conv2_output'
     '''stage 2'''
     network_str += generate_bn_layer('conv2_%d_sum_branch2_bn'%l, last_top, 'conv2_%d_sum_branch2_bn'%l)
@@ -320,7 +320,7 @@ def generate_train_val():
     network_str += generate_activation_layer('conv3_%d_sum__branch1_relu'%l, 'conv3_%d_sum_branch1_bn'%l, 'conv3_%d_sum_branch1_bn'%l, 'ReLU')
     
     network_str += generate_conv_layer(1, 1024, 2, 0, 'conv3_output', 'conv3_%d_sum_branch1_bn'%l, 'conv3_output')
-    network_str += generate_bn_layer('conv3_output_bn', 'conv3_output', 'conv3_output')
+    # network_str += generate_bn_layer('conv3_output_bn', 'conv3_output', 'conv3_output')
     last_output = 'conv3_output'
     '''stage 3'''
     network_str += generate_bn_layer('conv3_%d_sum_branch2_bn'%l, last_top, 'conv3_%d_sum_branch2_bn'%l)
@@ -357,7 +357,7 @@ def generate_train_val():
     
 
     network_str += generate_conv_layer(1, 2048, 2, 0, 'conv4_output', 'conv4_%d_sum_branch1_bn'%l, 'conv4_output')
-    network_str += generate_bn_layer('conv4_output_bn', 'conv4_output', 'conv4_output')
+    # network_str += generate_bn_layer('conv4_output_bn', 'conv4_output', 'conv4_output')
     last_output = 'conv4_output'
     '''stage 4'''
 
