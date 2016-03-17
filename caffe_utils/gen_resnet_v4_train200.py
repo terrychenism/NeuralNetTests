@@ -255,7 +255,7 @@ def generate_train_val():
     network_str += generate_bn_layer('conv1_output_bn', 'conv1_output', 'conv1_output')
     last_output = 'conv1_output'
 
-    network_str += generate_conv_layer(1, 64, 2, 0, 'conv2_1_1', last_top, 'conv2_1_1')
+    network_str += generate_conv_layer(1, 64, 1, 0, 'conv2_1_1', last_top, 'conv2_1_1')
     network_str += generate_bn_layer('conv2_1_1_bn', 'conv2_1_1', 'conv2_1_1')
     network_str += generate_activation_layer('conv2_1_1_relu', 'conv2_1_1', 'conv2_1_1', 'ReLU')
     network_str += generate_conv_layer(3, 64, 1, 1, 'conv2_1_2', 'conv2_1_1', 'conv2_1_2')
