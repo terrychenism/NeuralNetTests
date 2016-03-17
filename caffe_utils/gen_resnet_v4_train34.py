@@ -200,7 +200,7 @@ layer {
 '''%(bottom, bottom, bottom)
     return softmax_loss_str
 
-def generate_bn_layer_v3(layer_name, bottom, top):
+def generate_bn_layer(layer_name, bottom, top):
     bn_layer_str = '''layer {
   name: "%s"
   type: "BatchNorm"
@@ -254,7 +254,7 @@ def generate_bn_layer_v1(layer_name, bottom, top):
 '''%(layer_name, bottom, top)
     return bn_layer_str
 
-def generate_bn_layer(layer_name, bottom, top):
+def generate_bn_layer_v0(layer_name, bottom, top):
     bn_layer_str = '''layer {
   name: "%s"
   type: "BN"
@@ -298,16 +298,17 @@ def generate_train_val():
     '''before stage'''
     last_top = 'data'
     network_str += generate_conv_layer(7, kernel_num, 2, 3, 'conv1', last_top, 'conv1')
+    
+    network_str += generate_bn_layer('conv1_bn', 'conv1', 'conv1')
+    network_str += generate_activation_layer('conv1_relu', 'conv1', 'conv1', 'ReLU')
     network_str += generate_pooling_layer(3, 2, 'MAX', 'pool1', 'conv1', 'pool1')
-    network_str += generate_bn_layer('conv1_bn', 'pool1', 'pool1')
-    network_str += generate_activation_layer('conv1_relu', 'pool1', 'pool1', 'ReLU')
     '''stage 1'''
     last_top = 'pool1'
     network_str += generate_conv_layer(1, kernel_num, 1, 0, 'conv1_output', last_top, 'conv1_output')
     network_str += generate_bn_layer('conv1_output_bn', 'conv1_output', 'conv1_output')
     last_output = 'conv1_output'
 
-    network_str += generate_conv_layer(1, kernel_num, 2, 0, 'conv2_1_1', last_top, 'conv2_1_1')
+    network_str += generate_conv_layer(1, kernel_num, 1, 0, 'conv2_1_1', last_top, 'conv2_1_1')
     network_str += generate_bn_layer('conv2_1_1_bn', 'conv2_1_1', 'conv2_1_1')
     network_str += generate_activation_layer('conv2_1_1_relu', 'conv2_1_1', 'conv2_1_1', 'ReLU')
     network_str += generate_conv_layer(3, kernel_num, 1, 1, 'conv2_1_2', 'conv2_1_1', 'conv2_1_2')
@@ -399,7 +400,7 @@ def generate_train_val():
     network_str += generate_softmax_loss('fc')
     return network_str
 
-def generate_solver_v1(train_val_name):
+def generate_solver(train_val_name):
     solver_str = '''net: "%s"
 test_iter: 1000
 test_interval: 600000
@@ -413,11 +414,11 @@ max_iter: 600000
 momentum: 0.9
 weight_decay: 0.0001
 snapshot: 5000
-snapshot_prefix: "snapshots/resnet"
+snapshot_prefix: "resnet"
 solver_mode: GPU'''%(train_val_name)
     return solver_str
 
-def generate_solver(train_val_name):
+def generate_solver_v1(train_val_name):
     solver_str = '''test_iter: 1000
 test_interval: 600000
 test_initialization: false
